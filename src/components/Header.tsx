@@ -1,10 +1,14 @@
 import { Link } from "react-router-dom";
-import { Home, Menu, X, User } from "lucide-react";
+import { Home, Menu, X, User, LogOut } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Header = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { user, userRole, profile, signOut } = useAuth();
+
+  const dashboardLink = userRole === "host" ? "/host/dashboard" : "/dashboard";
 
   return (
     <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-md border-b">
@@ -19,49 +23,52 @@ const Header = () => {
         </Link>
 
         <nav className="hidden md:flex items-center gap-6">
-          <Link to="/search" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-            Find Housing
-          </Link>
-          <Link to="/" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-            List Property
-          </Link>
-          <Link to="/" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-            How It Works
-          </Link>
+          <Link to="/search" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Find Housing</Link>
+          {userRole === "host" && (
+            <Link to="/host/dashboard" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Host Dashboard</Link>
+          )}
         </nav>
 
         <div className="hidden md:flex items-center gap-3">
-          <Button variant="ghost" size="sm">
-            Sign In
-          </Button>
-          <Button size="sm">
-            Get Started
-          </Button>
+          {user ? (
+            <>
+              <Link to={dashboardLink}>
+                <Button variant="ghost" size="sm" className="gap-1.5">
+                  <User className="w-4 h-4" />
+                  {profile?.full_name?.split(" ")[0] || "Dashboard"}
+                </Button>
+              </Link>
+              <Button variant="ghost" size="sm" onClick={signOut} className="gap-1.5 text-muted-foreground">
+                <LogOut className="w-4 h-4" />
+              </Button>
+            </>
+          ) : (
+            <>
+              <Link to="/login"><Button variant="ghost" size="sm">Sign In</Button></Link>
+              <Link to="/signup"><Button size="sm">Get Started</Button></Link>
+            </>
+          )}
         </div>
 
-        <button
-          className="md:hidden p-2 text-foreground"
-          onClick={() => setMobileOpen(!mobileOpen)}
-        >
+        <button className="md:hidden p-2 text-foreground" onClick={() => setMobileOpen(!mobileOpen)}>
           {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>
       </div>
 
       {mobileOpen && (
         <div className="md:hidden border-t bg-card px-4 py-4 space-y-3 animate-fade-in">
-          <Link to="/search" className="block text-sm font-medium text-muted-foreground py-2" onClick={() => setMobileOpen(false)}>
-            Find Housing
-          </Link>
-          <Link to="/" className="block text-sm font-medium text-muted-foreground py-2" onClick={() => setMobileOpen(false)}>
-            List Property
-          </Link>
-          <Link to="/" className="block text-sm font-medium text-muted-foreground py-2" onClick={() => setMobileOpen(false)}>
-            How It Works
-          </Link>
-          <div className="flex gap-2 pt-2">
-            <Button variant="ghost" size="sm" className="flex-1">Sign In</Button>
-            <Button size="sm" className="flex-1">Get Started</Button>
-          </div>
+          <Link to="/search" className="block text-sm font-medium text-muted-foreground py-2" onClick={() => setMobileOpen(false)}>Find Housing</Link>
+          {user ? (
+            <>
+              <Link to={dashboardLink} className="block text-sm font-medium text-muted-foreground py-2" onClick={() => setMobileOpen(false)}>Dashboard</Link>
+              <Button variant="ghost" size="sm" onClick={() => { signOut(); setMobileOpen(false); }} className="w-full justify-start text-muted-foreground">Sign Out</Button>
+            </>
+          ) : (
+            <div className="flex gap-2 pt-2">
+              <Link to="/login" className="flex-1" onClick={() => setMobileOpen(false)}><Button variant="ghost" size="sm" className="w-full">Sign In</Button></Link>
+              <Link to="/signup" className="flex-1" onClick={() => setMobileOpen(false)}><Button size="sm" className="w-full">Get Started</Button></Link>
+            </div>
+          )}
         </div>
       )}
     </header>
