@@ -1,15 +1,36 @@
+import { useState, useEffect } from "react";
 import { Search, Shield, Star, MapPin, BadgeCheck, Users, GraduationCap, Building2, ArrowRight } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import HeroSearch from "@/components/HeroSearch";
 import ListingCard from "@/components/ListingCard";
 import { Button } from "@/components/ui/button";
-import { properties, universities } from "@/lib/mockData";
+import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
 import heroBg from "@/assets/hero-bg.jpg";
 
 const Index = () => {
-  const featured = properties.filter((p) => p.isVerified).slice(0, 3);
+  const [featured, setFeatured] = useState<any[]>([]);
+  const [universities, setUniversities] = useState<any[]>([]);
+
+  useEffect(() => {
+    // Fetch featured properties & universities
+    Promise.all([
+      supabase.from("properties").select("*, universities(name, short_name), rooms(room_type, price_per_session, available_count), reviews:reviews(rating)").eq("is_active", true).limit(6),
+      supabase.from("universities").select("*").order("name").limit(8),
+    ]).then(([propsRes, uniRes]) => {
+      const enriched = (propsRes.data || []).map(p => {
+        const ratings = (p.reviews || []).map((r: any) => r.rating);
+        const avgRating = ratings.length > 0 ? ratings.reduce((a: number, b: number) => a + b, 0) / ratings.length : 0;
+        const prices = (p.rooms || []).map((r: any) => r.price_per_session).filter((v: number) => v > 0);
+        const lowestPrice = prices.length > 0 ? Math.min(...prices) : 0;
+        const totalAvailable = (p.rooms || []).reduce((sum: number, r: any) => sum + (r.available_count || 0), 0);
+        return { ...p, avgRating, reviewCount: ratings.length, lowestPrice, totalAvailable };
+      });
+      setFeatured(enriched.slice(0, 3));
+      setUniversities(uniRes.data || []);
+    });
+  }, []);
 
   const stats = [
     { value: "2.1M+", label: "Students Served", icon: GraduationCap },
@@ -37,12 +58,10 @@ const Index = () => {
         <div className="relative container mx-auto px-4 py-20 md:py-32">
           <div className="max-w-2xl space-y-6">
             <div className="inline-flex items-center gap-2 bg-primary/20 backdrop-blur-sm text-primary-foreground rounded-full px-4 py-1.5 text-xs font-medium">
-              <BadgeCheck className="w-3.5 h-3.5" />
-              Verified Listings Only
+              <BadgeCheck className="w-3.5 h-3.5" />Verified Listings Only
             </div>
             <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-primary-foreground leading-tight">
-              Find Safe Housing{" "}
-              <span className="text-accent">Near Campus</span>
+              Find Safe Housing{" "}<span className="text-accent">Near Campus</span>
             </h1>
             <p className="text-primary-foreground/80 text-lg max-w-lg leading-relaxed">
               Nigeria's trusted student housing marketplace. Verified landlords, transparent pricing, and campus-proximity search.
@@ -77,16 +96,12 @@ const Index = () => {
         <div className="container mx-auto">
           <div className="text-center mb-12">
             <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground">How It Works</h2>
-            <p className="text-muted-foreground mt-3 max-w-md mx-auto">
-              Find your perfect student accommodation in three simple steps.
-            </p>
+            <p className="text-muted-foreground mt-3 max-w-md mx-auto">Find your perfect student accommodation in three simple steps.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
             {howItWorks.map((item) => (
               <div key={item.step} className="text-center space-y-3">
-                <div className="w-14 h-14 rounded-2xl bg-primary/10 text-primary font-display font-bold text-xl flex items-center justify-center mx-auto">
-                  {item.step}
-                </div>
+                <div className="w-14 h-14 rounded-2xl bg-primary/10 text-primary font-display font-bold text-xl flex items-center justify-center mx-auto">{item.step}</div>
                 <h3 className="font-display text-lg font-semibold text-foreground">{item.title}</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">{item.desc}</p>
               </div>
@@ -96,31 +111,25 @@ const Index = () => {
       </section>
 
       {/* Featured Listings */}
-      <section className="section-padding bg-muted/30">
-        <div className="container mx-auto">
-          <div className="flex items-end justify-between mb-8">
-            <div>
-              <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground">Featured Listings</h2>
-              <p className="text-muted-foreground mt-2">Verified, top-rated housing near popular universities.</p>
+      {featured.length > 0 && (
+        <section className="section-padding bg-muted/30">
+          <div className="container mx-auto">
+            <div className="flex items-end justify-between mb-8">
+              <div>
+                <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground">Featured Listings</h2>
+                <p className="text-muted-foreground mt-2">Verified, top-rated housing near popular universities.</p>
+              </div>
+              <Link to="/search"><Button variant="ghost" className="hidden md:flex items-center gap-1 text-primary">View all <ArrowRight className="w-4 h-4" /></Button></Link>
             </div>
-            <Link to="/search">
-              <Button variant="ghost" className="hidden md:flex items-center gap-1 text-primary">
-                View all <ArrowRight className="w-4 h-4" />
-              </Button>
-            </Link>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {featured.map((p) => (<ListingCard key={p.id} property={p} />))}
+            </div>
+            <div className="text-center mt-8 md:hidden">
+              <Link to="/search"><Button variant="outline">View All Listings</Button></Link>
+            </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {featured.map((p) => (
-              <ListingCard key={p.id} property={p} />
-            ))}
-          </div>
-          <div className="text-center mt-8 md:hidden">
-            <Link to="/search">
-              <Button variant="outline">View All Listings</Button>
-            </Link>
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Popular Universities */}
       <section className="section-padding bg-background">
@@ -130,12 +139,8 @@ const Index = () => {
             <p className="text-muted-foreground mt-2">Browse housing near top Nigerian campuses.</p>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto">
-            {universities.slice(0, 8).map((u) => (
-              <Link
-                key={u.id}
-                to={`/search?university=${u.short_name}`}
-                className="group bg-card rounded-xl border p-4 text-center card-hover"
-              >
+            {universities.map((u) => (
+              <Link key={u.id} to={`/search?university=${u.short_name}`} className="group bg-card rounded-xl border p-4 text-center card-hover">
                 <p className="font-display font-bold text-primary text-lg">{u.short_name}</p>
                 <p className="text-xs text-muted-foreground mt-1">{u.city}, {u.state}</p>
               </Link>
@@ -147,19 +152,11 @@ const Index = () => {
       {/* CTA */}
       <section className="section-padding bg-primary">
         <div className="container mx-auto text-center">
-          <h2 className="font-display text-3xl md:text-4xl font-bold text-primary-foreground">
-            Own a Hostel or Property?
-          </h2>
-          <p className="text-primary-foreground/80 mt-3 max-w-md mx-auto">
-            Join thousands of verified hosts earning from student bookings. List your property for free.
-          </p>
+          <h2 className="font-display text-3xl md:text-4xl font-bold text-primary-foreground">Own a Hostel or Property?</h2>
+          <p className="text-primary-foreground/80 mt-3 max-w-md mx-auto">Join thousands of verified hosts earning from student bookings. List your property for free.</p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center mt-8">
-            <Button size="lg" variant="secondary" className="font-semibold">
-              List Your Property
-            </Button>
-            <Button size="lg" variant="outline" className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10">
-              Learn More
-            </Button>
+            <Link to="/signup"><Button size="lg" variant="secondary" className="font-semibold">List Your Property</Button></Link>
+            <Link to="/search"><Button size="lg" variant="outline" className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10">Browse Listings</Button></Link>
           </div>
         </div>
       </section>
