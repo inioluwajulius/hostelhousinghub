@@ -13,6 +13,7 @@ import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import StudentDashboard from "./pages/StudentDashboard";
 import HostDashboard from "./pages/HostDashboard";
+import MessagesPage from "./pages/MessagesPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +35,7 @@ const App = () => (
             <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/dashboard" element={<StudentDashboard />} />
             <Route path="/host/dashboard" element={<HostDashboard />} />
+            <Route path="/messages" element={<MessagesPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
