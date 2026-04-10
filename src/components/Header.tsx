@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Home, Menu, X, User, LogOut } from "lucide-react";
+import { Home, Menu, X, User, LogOut, MessageSquare } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -24,6 +24,11 @@ const Header = () => {
 
         <nav className="hidden md:flex items-center gap-6">
           <Link to="/search" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Find Housing</Link>
+          {user && (
+            <Link to="/messages" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+              <MessageSquare className="w-4 h-4" />Messages
+            </Link>
+          )}
           {userRole === "host" && (
             <Link to="/host/dashboard" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Host Dashboard</Link>
           )}

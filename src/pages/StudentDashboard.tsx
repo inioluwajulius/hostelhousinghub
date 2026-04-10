@@ -3,11 +3,12 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import ProfileEditor from "@/components/ProfileEditor";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Home as HomeIcon, BookOpen, Heart, MessageSquare, Bell, User, Calendar, MapPin, Star } from "lucide-react";
+import { Home as HomeIcon, BookOpen, Heart, MessageSquare, Bell, User, Calendar, MapPin, Star, Edit } from "lucide-react";
 import { toast } from "sonner";
 
 const StudentDashboard = () => {
@@ -17,7 +18,9 @@ const StudentDashboard = () => {
   const [savedListings, setSavedListings] = useState<any[]>([]);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [messages, setMessages] = useState<any[]>([]);
+  const [universities, setUniversities] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingProfile, setEditingProfile] = useState(false);
 
   useEffect(() => {
     if (!user) { navigate("/login"); return; }
@@ -27,20 +30,29 @@ const StudentDashboard = () => {
 
   const fetchData = async () => {
     if (!user) return;
-    const [bookingsRes, savedRes, notifRes, messagesRes] = await Promise.all([
+    const [bookingsRes, savedRes, notifRes, messagesRes, uniRes] = await Promise.all([
       supabase.from("bookings").select("*, properties(title, address, university_id, universities(short_name)), rooms(room_type, price_per_session)").eq("student_id", user.id).order("created_at", { ascending: false }),
       supabase.from("saved_listings").select("*, properties(*, universities(short_name))").eq("user_id", user.id).order("created_at", { ascending: false }),
       supabase.from("notifications").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
       supabase.from("messages").select("*, sender:profiles!messages_sender_id_fkey(full_name)").eq("receiver_id", user.id).order("created_at", { ascending: false }).limit(20),
+      supabase.from("universities").select("*").order("name"),
     ]);
     setBookings(bookingsRes.data || []);
     setSavedListings(savedRes.data || []);
     setNotifications(notifRes.data || []);
     setMessages(messagesRes.data || []);
+    setUniversities(uniRes.data || []);
     setLoading(false);
   };
 
+  const markNotificationsRead = async () => {
+    if (!user) return;
+    await supabase.from("notifications").update({ is_read: true }).eq("user_id", user.id).eq("is_read", false);
+    fetchData();
+  };
+
   const formatPrice = (amount: number) => new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", minimumFractionDigits: 0 }).format(amount);
+  const unreadCount = notifications.filter(n => !n.is_read).length;
 
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center bg-background"><div className="animate-pulse text-muted-foreground">Loading...</div></div>;
@@ -52,20 +64,25 @@ const StudentDashboard = () => {
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
           <div>
-            <h1 className="font-display text-3xl font-bold text-foreground">
-              Welcome, {profile?.full_name || "Student"}
-            </h1>
+            <h1 className="font-display text-3xl font-bold text-foreground">Welcome, {profile?.full_name || "Student"}</h1>
             <p className="text-muted-foreground mt-1">Manage your bookings, saved listings, and messages</p>
           </div>
-          <Link to="/search"><Button>Find Housing</Button></Link>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => navigate("/messages")} className="gap-1.5">
+              <MessageSquare className="w-4 h-4" /> Messages
+            </Button>
+            <Link to="/search"><Button>Find Housing</Button></Link>
+          </div>
         </div>
 
         <Tabs defaultValue="bookings" className="space-y-6">
           <TabsList className="bg-muted">
             <TabsTrigger value="bookings" className="gap-1.5"><BookOpen className="w-4 h-4" />Bookings</TabsTrigger>
             <TabsTrigger value="saved" className="gap-1.5"><Heart className="w-4 h-4" />Saved</TabsTrigger>
-            <TabsTrigger value="messages" className="gap-1.5"><MessageSquare className="w-4 h-4" />Messages</TabsTrigger>
-            <TabsTrigger value="notifications" className="gap-1.5"><Bell className="w-4 h-4" />Notifications</TabsTrigger>
+            <TabsTrigger value="notifications" className="gap-1.5 relative">
+              <Bell className="w-4 h-4" />Notifications
+              {unreadCount > 0 && <span className="ml-1 bg-destructive text-destructive-foreground text-xs rounded-full w-5 h-5 inline-flex items-center justify-center">{unreadCount}</span>}
+            </TabsTrigger>
             <TabsTrigger value="profile" className="gap-1.5"><User className="w-4 h-4" />Profile</TabsTrigger>
           </TabsList>
 
@@ -118,29 +135,12 @@ const StudentDashboard = () => {
             )}
           </TabsContent>
 
-          <TabsContent value="messages">
-            {messages.length === 0 ? (
-              <div className="text-center py-16 bg-card rounded-xl border">
-                <MessageSquare className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="font-display text-lg font-semibold mb-2">No messages</h3>
-                <p className="text-muted-foreground text-sm">Messages from hosts will appear here</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {messages.map((m) => (
-                  <div key={m.id} className={`bg-card rounded-xl border p-4 ${!m.read_at ? "border-primary/30" : ""}`}>
-                    <div className="flex justify-between">
-                      <span className="font-medium text-sm">{m.sender?.full_name || "Host"}</span>
-                      <span className="text-xs text-muted-foreground">{new Date(m.created_at).toLocaleDateString()}</span>
-                    </div>
-                    <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{m.content}</p>
-                  </div>
-                ))}
+          <TabsContent value="notifications">
+            {unreadCount > 0 && (
+              <div className="flex justify-end mb-3">
+                <Button variant="ghost" size="sm" onClick={markNotificationsRead}>Mark all as read</Button>
               </div>
             )}
-          </TabsContent>
-
-          <TabsContent value="notifications">
             {notifications.length === 0 ? (
               <div className="text-center py-16 bg-card rounded-xl border">
                 <Bell className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
@@ -150,7 +150,7 @@ const StudentDashboard = () => {
             ) : (
               <div className="space-y-3">
                 {notifications.map((n) => (
-                  <div key={n.id} className={`bg-card rounded-xl border p-4 ${!n.is_read ? "border-primary/30" : ""}`}>
+                  <div key={n.id} className={`bg-card rounded-xl border p-4 ${!n.is_read ? "border-primary/30 bg-primary/5" : ""}`}>
                     <div className="flex justify-between">
                       <span className="font-medium text-sm">{n.title}</span>
                       <span className="text-xs text-muted-foreground">{new Date(n.created_at).toLocaleDateString()}</span>
@@ -163,25 +163,33 @@ const StudentDashboard = () => {
           </TabsContent>
 
           <TabsContent value="profile">
-            <div className="bg-card rounded-xl border p-6 max-w-lg">
-              <div className="flex items-center gap-4 mb-6">
-                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold font-display text-2xl">
-                  {profile?.full_name?.charAt(0) || "U"}
+            {editingProfile ? (
+              <div>
+                <Button variant="ghost" size="sm" onClick={() => setEditingProfile(false)} className="mb-4">← Back to profile</Button>
+                <ProfileEditor universities={universities} onUpdate={() => { setEditingProfile(false); fetchData(); window.location.reload(); }} />
+              </div>
+            ) : (
+              <div className="bg-card rounded-xl border p-6 max-w-lg">
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold font-display text-2xl">
+                    {profile?.full_name?.charAt(0) || "U"}
+                  </div>
+                  <div>
+                    <h3 className="font-display text-xl font-semibold">{profile?.full_name}</h3>
+                    <p className="text-sm text-muted-foreground">{user?.email}</p>
+                    <Badge variant="outline" className="mt-1">Student</Badge>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-display text-xl font-semibold">{profile?.full_name}</h3>
-                  <p className="text-sm text-muted-foreground">{user?.email}</p>
-                  <Badge variant="outline" className="mt-1">Student</Badge>
+                {profile?.phone && <p className="text-sm text-muted-foreground mb-2">📞 {profile.phone}</p>}
+                {profile?.matric_number && <p className="text-sm text-muted-foreground mb-2">🎓 {profile.matric_number}</p>}
+                <div className="flex gap-2 mt-4">
+                  <Button variant="outline" onClick={() => setEditingProfile(true)} className="gap-1.5">
+                    <Edit className="w-4 h-4" />Edit Profile
+                  </Button>
+                  <Button variant="destructive" onClick={signOut}>Sign Out</Button>
                 </div>
               </div>
-              {profile?.universities && (
-                <p className="text-sm text-muted-foreground mb-4">
-                  <MapPin className="w-4 h-4 inline mr-1" />
-                  {profile.universities.name} ({profile.universities.short_name})
-                </p>
-              )}
-              <Button variant="destructive" onClick={signOut}>Sign Out</Button>
-            </div>
+            )}
           </TabsContent>
         </Tabs>
       </main>
