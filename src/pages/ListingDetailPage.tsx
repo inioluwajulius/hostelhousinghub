@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, MapPin, Star, BadgeCheck, Users, Wifi, Zap, Shield, Droplets, Car, BookOpen, Check, Heart, Calendar } from "lucide-react";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import { ArrowLeft, MapPin, Star, BadgeCheck, Users, Wifi, Zap, Shield, Droplets, Car, BookOpen, Check, Heart, Calendar, MessageSquare } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import ReviewForm from "@/components/ReviewForm";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -41,7 +42,8 @@ const formatPrice = (amount: number) => new Intl.NumberFormat("en-NG", { style: 
 
 const ListingDetailPage = () => {
   const { id } = useParams();
-  const { user } = useAuth();
+  const { user, userRole } = useAuth();
+  const navigate = useNavigate();
   const [property, setProperty] = useState<any>(null);
   const [reviews, setReviews] = useState<any[]>([]);
   const [hostProfile, setHostProfile] = useState<any>(null);
@@ -50,10 +52,9 @@ const ListingDetailPage = () => {
   const [isSaved, setIsSaved] = useState(false);
   const [showInspectionForm, setShowInspectionForm] = useState(false);
   const [inspectionDate, setInspectionDate] = useState("");
+  const [hasBooked, setHasBooked] = useState(false);
 
-  useEffect(() => {
-    fetchProperty();
-  }, [id]);
+  useEffect(() => { fetchProperty(); }, [id]);
 
   const fetchProperty = async () => {
     if (!id) return;
@@ -65,7 +66,6 @@ const ListingDetailPage = () => {
       setProperty(prop);
       setSelectedRoom(prop.rooms?.[0] || null);
 
-      // Fetch reviews & host profile in parallel
       const [revRes, hostRes] = await Promise.all([
         supabase.from("reviews").select("*, reviewer:profiles!reviews_reviewer_id_fkey(full_name)").eq("property_id", id).order("created_at", { ascending: false }),
         supabase.from("profiles").select("*").eq("user_id", prop.host_id).single(),
@@ -74,8 +74,12 @@ const ListingDetailPage = () => {
       setHostProfile(hostRes.data);
 
       if (user) {
-        const { data: saved } = await supabase.from("saved_listings").select("id").eq("user_id", user.id).eq("property_id", id).maybeSingle();
-        setIsSaved(!!saved);
+        const [savedRes, bookingRes] = await Promise.all([
+          supabase.from("saved_listings").select("id").eq("user_id", user.id).eq("property_id", id).maybeSingle(),
+          supabase.from("bookings").select("id").eq("student_id", user.id).eq("property_id", id).limit(1),
+        ]);
+        setIsSaved(!!savedRes.data);
+        setHasBooked((bookingRes.data || []).length > 0);
       }
     }
     setLoading(false);
@@ -85,12 +89,10 @@ const ListingDetailPage = () => {
     if (!user) { toast.error("Please sign in to save listings"); return; }
     if (isSaved) {
       await supabase.from("saved_listings").delete().eq("user_id", user.id).eq("property_id", id!);
-      setIsSaved(false);
-      toast.success("Removed from saved");
+      setIsSaved(false); toast.success("Removed from saved");
     } else {
       await supabase.from("saved_listings").insert({ user_id: user.id, property_id: id! });
-      setIsSaved(true);
-      toast.success("Saved!");
+      setIsSaved(true); toast.success("Saved!");
     }
   };
 
@@ -98,29 +100,30 @@ const ListingDetailPage = () => {
     if (!user) { toast.error("Please sign in to book"); return; }
     if (!selectedRoom) { toast.error("No room selected"); return; }
     const { error } = await supabase.from("bookings").insert({
-      student_id: user.id,
-      room_id: selectedRoom.id,
-      property_id: id!,
+      student_id: user.id, room_id: selectedRoom.id, property_id: id!,
       start_date: new Date().toISOString().split("T")[0],
       end_date: new Date(Date.now() + 270 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-      booking_type: "SESSION",
-      total_amount: selectedRoom.price_per_session,
+      booking_type: "SESSION", total_amount: selectedRoom.price_per_session,
       service_fee: selectedRoom.price_per_session * 0.08,
     });
     if (error) toast.error(error.message);
-    else toast.success("Booking request sent! The host will review it.");
+    else { toast.success("Booking request sent! The host will review it."); setHasBooked(true); }
   };
 
   const handleInspection = async () => {
     if (!user) { toast.error("Please sign in"); return; }
     if (!inspectionDate) { toast.error("Select a date"); return; }
     const { error } = await supabase.from("inspections").insert({
-      student_id: user.id,
-      property_id: id!,
-      scheduled_at: new Date(inspectionDate).toISOString(),
+      student_id: user.id, property_id: id!, scheduled_at: new Date(inspectionDate).toISOString(),
     });
     if (error) toast.error(error.message);
     else { toast.success("Inspection scheduled!"); setShowInspectionForm(false); }
+  };
+
+  const handleMessageHost = () => {
+    if (!user) { toast.error("Please sign in to message the host"); return; }
+    if (!property) return;
+    navigate(`/messages?with=${property.host_id}`);
   };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-background"><div className="animate-pulse text-muted-foreground">Loading...</div></div>;
@@ -142,14 +145,17 @@ const ListingDetailPage = () => {
 
   const genderLabel = property.gender_restriction === "FEMALE_ONLY" ? "Female Only" : property.gender_restriction === "MALE_ONLY" ? "Male Only" : "Mixed Gender";
   const imageIdx = Math.abs(property.id?.charCodeAt(0) || 0) % fallbackImages.length;
+  const photos = property.rooms?.flatMap((r: any) => r.photos || []).filter(Boolean);
+  const displayImage = photos?.length > 0 ? photos[0] : fallbackImages[imageIdx];
   const avgRating = reviews.length > 0 ? reviews.reduce((sum: number, r: any) => sum + r.rating, 0) / reviews.length : 0;
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
       <main className="flex-1">
+        {/* Hero image */}
         <div className="relative h-64 sm:h-80 md:h-96 overflow-hidden">
-          <img src={fallbackImages[imageIdx]} alt={property.title} className="w-full h-full object-cover" width={1920} height={1080} />
+          <img src={displayImage} alt={property.title} className="w-full h-full object-cover" width={1920} height={1080} />
           <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 to-transparent" />
           <div className="absolute bottom-6 left-4 right-4 container mx-auto">
             <Link to="/search" className="inline-flex items-center gap-1 text-primary-foreground/80 text-sm mb-3 hover:text-primary-foreground transition-colors">
@@ -161,6 +167,17 @@ const ListingDetailPage = () => {
             <Heart className={`w-5 h-5 ${isSaved ? "fill-destructive text-destructive" : "text-foreground"}`} />
           </button>
         </div>
+
+        {/* Photo gallery */}
+        {photos && photos.length > 1 && (
+          <div className="container mx-auto px-4 mt-4">
+            <div className="flex gap-2 overflow-x-auto pb-2">
+              {photos.map((url: string, i: number) => (
+                <img key={i} src={url} alt="" className="h-20 w-28 object-cover rounded-lg shrink-0" />
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="container mx-auto px-4 py-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -201,11 +218,8 @@ const ListingDetailPage = () => {
                   <h2 className="font-display text-xl font-semibold mb-3">Room Types</h2>
                   <div className="space-y-3">
                     {property.rooms.map((room: any) => (
-                      <div
-                        key={room.id}
-                        onClick={() => setSelectedRoom(room)}
-                        className={`bg-card rounded-xl border p-4 cursor-pointer transition-all ${selectedRoom?.id === room.id ? "border-primary ring-1 ring-primary" : "hover:border-muted-foreground/30"}`}
-                      >
+                      <div key={room.id} onClick={() => setSelectedRoom(room)}
+                        className={`bg-card rounded-xl border p-4 cursor-pointer transition-all ${selectedRoom?.id === room.id ? "border-primary ring-1 ring-primary" : "hover:border-muted-foreground/30"}`}>
                         <div className="flex justify-between items-center">
                           <div>
                             <p className="font-semibold">{roomTypeLabels[room.room_type] || room.room_type}</p>
@@ -233,22 +247,28 @@ const ListingDetailPage = () => {
               {hostProfile && (
                 <div>
                   <h2 className="font-display text-xl font-semibold mb-3">Your Host</h2>
-                  <div className="flex items-center gap-3 bg-card rounded-xl p-4 border shadow-card">
-                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold font-display">
-                      {hostProfile.full_name?.charAt(0) || "H"}
+                  <div className="flex items-center justify-between bg-card rounded-xl p-4 border shadow-card">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold font-display">
+                        {hostProfile.full_name?.charAt(0) || "H"}
+                      </div>
+                      <div>
+                        <p className="font-semibold text-foreground">{hostProfile.full_name}</p>
+                        <p className="text-xs text-muted-foreground">{property.is_verified ? "Verified Host · " : ""}{property.total_rooms} rooms managed</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-semibold text-foreground">{hostProfile.full_name}</p>
-                      <p className="text-xs text-muted-foreground">{property.is_verified ? "Verified Host · " : ""}{property.total_rooms} rooms managed</p>
-                    </div>
+                    <Button variant="outline" size="sm" onClick={handleMessageHost} className="gap-1.5">
+                      <MessageSquare className="w-4 h-4" />Message
+                    </Button>
                   </div>
                 </div>
               )}
 
-              {reviews.length > 0 && (
-                <div>
-                  <h2 className="font-display text-xl font-semibold mb-3">Reviews ({reviews.length})</h2>
-                  <div className="space-y-4">
+              {/* Reviews */}
+              <div>
+                <h2 className="font-display text-xl font-semibold mb-3">Reviews ({reviews.length})</h2>
+                {reviews.length > 0 ? (
+                  <div className="space-y-4 mb-6">
                     {reviews.slice(0, 5).map((r: any) => (
                       <div key={r.id} className="bg-card rounded-xl border p-4">
                         <div className="flex items-center gap-2 mb-2">
@@ -264,10 +284,18 @@ const ListingDetailPage = () => {
                       </div>
                     ))}
                   </div>
-                </div>
-              )}
+                ) : (
+                  <p className="text-sm text-muted-foreground mb-6">No reviews yet. Be the first to review!</p>
+                )}
+
+                {/* Review form — show if user has booked or is logged in */}
+                {user && userRole === "student" && (
+                  <ReviewForm propertyId={property.id} onSubmitted={fetchProperty} />
+                )}
+              </div>
             </div>
 
+            {/* Sidebar */}
             <div className="lg:col-span-1">
               <div className="sticky top-24 bg-card rounded-2xl border shadow-elevated p-6 space-y-5">
                 {selectedRoom ? (
@@ -305,6 +333,10 @@ const ListingDetailPage = () => {
                     <Calendar className="w-4 h-4 mr-2" />Schedule Inspection
                   </Button>
                 )}
+
+                <Button variant="outline" className="w-full" onClick={handleMessageHost}>
+                  <MessageSquare className="w-4 h-4 mr-2" />Message Host
+                </Button>
 
                 <p className="text-xs text-center text-muted-foreground">Secure payment via Paystack · Escrow protection</p>
               </div>
