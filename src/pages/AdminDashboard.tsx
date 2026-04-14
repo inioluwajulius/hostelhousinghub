@@ -114,7 +114,7 @@ const AdminDashboard = () => {
                         {p.is_verified && <Badge className="bg-success/10 text-success border-0 text-xs">Verified</Badge>}
                       </div>
                       <p className="text-sm text-muted-foreground">{p.address}</p>
-                      <p className="text-xs text-muted-foreground mt-1">Host: {(p.host as any)?.full_name || "Unknown"} · Near {p.universities?.short_name}</p>
+                      <p className="text-xs text-muted-foreground mt-1">Near {p.universities?.short_name}</p>
                     </div>
                     <div className="flex gap-2 items-start">
                       {p.status === "PENDING" && (
