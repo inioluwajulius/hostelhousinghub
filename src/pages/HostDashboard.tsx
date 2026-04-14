@@ -45,7 +45,7 @@ const HostDashboard = () => {
     if (!user) return;
     const [propsRes, bookingsRes, uniRes] = await Promise.all([
       supabase.from("properties").select("*, universities(name, short_name), rooms(*)").eq("host_id", user.id).order("created_at", { ascending: false }),
-      supabase.from("bookings").select("*, properties!inner(host_id, title), rooms(room_type, price_per_session), student:profiles!bookings_student_id_fkey(full_name)").order("created_at", { ascending: false }),
+      supabase.from("bookings").select("*, properties!inner(host_id, title), rooms(room_type, price_per_session)").order("created_at", { ascending: false }),
       supabase.from("universities").select("*").order("name"),
     ]);
     setProperties(propsRes.data || []);

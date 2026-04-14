@@ -402,6 +402,56 @@ export type Database = {
           },
         ]
       }
+      roommate_requests: {
+        Row: {
+          budget_max: number | null
+          budget_min: number | null
+          created_at: string | null
+          description: string | null
+          gender_preference: string | null
+          id: string
+          is_active: boolean | null
+          room_type_preference: string | null
+          university_id: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          budget_max?: number | null
+          budget_min?: number | null
+          created_at?: string | null
+          description?: string | null
+          gender_preference?: string | null
+          id?: string
+          is_active?: boolean | null
+          room_type_preference?: string | null
+          university_id?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          budget_max?: number | null
+          budget_min?: number | null
+          created_at?: string | null
+          description?: string | null
+          gender_preference?: string | null
+          id?: string
+          is_active?: boolean | null
+          room_type_preference?: string | null
+          university_id?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "roommate_requests_university_id_fkey"
+            columns: ["university_id"]
+            isOneToOne: false
+            referencedRelation: "universities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rooms: {
         Row: {
           available_count: number

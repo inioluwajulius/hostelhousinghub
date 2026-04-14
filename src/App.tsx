@@ -14,6 +14,8 @@ import ResetPasswordPage from "./pages/ResetPasswordPage";
 import StudentDashboard from "./pages/StudentDashboard";
 import HostDashboard from "./pages/HostDashboard";
 import MessagesPage from "./pages/MessagesPage";
+import AdminDashboard from "./pages/AdminDashboard";
+import RoommateFinderPage from "./pages/RoommateFinderPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -36,6 +38,8 @@ const App = () => (
             <Route path="/dashboard" element={<StudentDashboard />} />
             <Route path="/host/dashboard" element={<HostDashboard />} />
             <Route path="/messages" element={<MessagesPage />} />
+            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/roommates" element={<RoommateFinderPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
