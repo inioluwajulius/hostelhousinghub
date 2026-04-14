@@ -38,7 +38,7 @@ const RoommateFinderPage = () => {
 
   const fetchData = async () => {
     const [reqRes, uniRes] = await Promise.all([
-      supabase.from("roommate_requests").select("*, profiles:profiles!roommate_requests_user_id_fkey(full_name, profile_photo_url), universities(name, short_name)").eq("is_active", true).order("created_at", { ascending: false }),
+      supabase.from("roommate_requests").select("*, universities(name, short_name)").eq("is_active", true).order("created_at", { ascending: false }),
       supabase.from("universities").select("*").order("name"),
     ]);
     const allRequests = reqRes.data || [];
