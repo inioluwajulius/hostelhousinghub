@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Home, GraduationCap, Building2, Eye, EyeOff } from "lucide-react";
+import { lovable } from "@/integrations/lovable";
 import { toast } from "sonner";
 
 const SignUpPage = () => {
