@@ -203,10 +203,10 @@ const RoommateFinderPage = () => {
               <div key={r.id} className={`bg-card rounded-xl border p-5 space-y-3 ${r.user_id === user?.id ? "ring-2 ring-primary/30" : ""}`}>
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
-                    {(r.profiles as any)?.full_name?.charAt(0) || "?"}
+                    {r.profile_name?.charAt(0) || "?"}
                   </div>
                   <div>
-                    <p className="font-semibold text-foreground text-sm">{(r.profiles as any)?.full_name || "Student"}</p>
+                    <p className="font-semibold text-foreground text-sm">{r.profile_name || "Student"}</p>
                     <div className="flex items-center gap-1 text-xs text-muted-foreground">
                       <GraduationCap className="w-3 h-3" />{r.universities?.short_name || "N/A"}
                     </div>
