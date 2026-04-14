@@ -26,8 +26,8 @@ const AdminDashboard = () => {
 
   const fetchData = async () => {
     const [propsRes, reportsRes, profilesRes] = await Promise.all([
-      supabase.from("properties").select("*, universities(short_name), host:profiles!properties_host_id_fkey(full_name)").order("created_at", { ascending: false }),
-      supabase.from("reports").select("*, reporter:profiles!reports_reporter_id_fkey(full_name), properties(title)").order("created_at", { ascending: false }),
+      supabase.from("properties").select("*, universities(short_name)").order("created_at", { ascending: false }),
+      supabase.from("reports").select("*, properties(title)").order("created_at", { ascending: false }),
       supabase.from("profiles").select("*, user_roles(role), universities(short_name)").order("created_at", { ascending: false }),
     ]);
     setProperties(propsRes.data || []);
