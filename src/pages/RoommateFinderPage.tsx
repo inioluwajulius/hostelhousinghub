@@ -42,10 +42,20 @@ const RoommateFinderPage = () => {
       supabase.from("universities").select("*").order("name"),
     ]);
     const allRequests = reqRes.data || [];
-    setRequests(allRequests);
+    
+    // Fetch profile names for each request
+    const userIds = [...new Set(allRequests.map((r: any) => r.user_id))];
+    let profileMap: Record<string, string> = {};
+    if (userIds.length > 0) {
+      const { data: profiles } = await supabase.from("profiles").select("user_id, full_name").in("user_id", userIds);
+      (profiles || []).forEach((p: any) => { profileMap[p.user_id] = p.full_name; });
+    }
+    
+    const enriched = allRequests.map((r: any) => ({ ...r, profile_name: profileMap[r.user_id] || "Student" }));
+    setRequests(enriched);
     setUniversities(uniRes.data || []);
     if (user) {
-      const mine = allRequests.find((r: any) => r.user_id === user.id);
+      const mine = enriched.find((r: any) => r.user_id === user.id);
       setMyRequest(mine || null);
     }
     setLoading(false);
