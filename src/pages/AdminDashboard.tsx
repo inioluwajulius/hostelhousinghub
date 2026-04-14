@@ -154,7 +154,7 @@ const AdminDashboard = () => {
                         </div>
                         <p className="text-sm text-muted-foreground">{r.description || "No details"}</p>
                         <p className="text-xs text-muted-foreground mt-1">
-                          Reported by: {(r.reporter as any)?.full_name || "Unknown"}
+                          Report
                           {r.properties?.title && ` · Property: ${r.properties.title}`}
                           {" · "}{new Date(r.created_at).toLocaleDateString()}
                         </p>
