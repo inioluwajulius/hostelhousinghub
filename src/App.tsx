@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { useBrowserNotifications } from "@/hooks/useBrowserNotifications";
 import Index from "./pages/Index";
 import SearchPage from "./pages/SearchPage";
 import ListingDetailPage from "./pages/ListingDetailPage";
@@ -21,6 +22,29 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+const AppRoutes = () => {
+  useBrowserNotifications();
+
+  return (
+    <Routes>
+      <Route path="/" element={<Index />} />
+      <Route path="/search" element={<SearchPage />} />
+      <Route path="/listing/:id" element={<ListingDetailPage />} />
+      <Route path="/signup" element={<SignUpPage />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/dashboard" element={<StudentDashboard />} />
+      <Route path="/host/dashboard" element={<HostDashboard />} />
+      <Route path="/messages" element={<MessagesPage />} />
+      <Route path="/admin" element={<AdminDashboard />} />
+      <Route path="/roommates" element={<RoommateFinderPage />} />
+      <Route path="/booking-callback" element={<BookingCallbackPage />} />
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -28,22 +52,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/search" element={<SearchPage />} />
-            <Route path="/listing/:id" element={<ListingDetailPage />} />
-            <Route path="/signup" element={<SignUpPage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-            <Route path="/reset-password" element={<ResetPasswordPage />} />
-            <Route path="/dashboard" element={<StudentDashboard />} />
-            <Route path="/host/dashboard" element={<HostDashboard />} />
-            <Route path="/messages" element={<MessagesPage />} />
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/roommates" element={<RoommateFinderPage />} />
-            <Route path="/booking-callback" element={<BookingCallbackPage />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <AppRoutes />
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

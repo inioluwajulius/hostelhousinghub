@@ -30,6 +30,7 @@ const MessagesPage = () => {
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const profileCache = useRef<Map<string, string>>(new Map());
 
   useEffect(() => {
     if (!user) { navigate("/login"); return; }
@@ -37,7 +38,13 @@ const MessagesPage = () => {
   }, [user]);
 
   useEffect(() => {
-    if (selectedPartner) fetchMessages(selectedPartner);
+    if (selectedPartner) {
+      fetchMessages(selectedPartner);
+      // Fetch partner name if we don't have it
+      if (!selectedPartnerName) {
+        fetchProfileName(selectedPartner).then(name => setSelectedPartnerName(name));
+      }
+    }
   }, [selectedPartner]);
 
   useEffect(() => {
@@ -55,6 +62,14 @@ const MessagesPage = () => {
           if (msg.sender_id === selectedPartner || msg.receiver_id === selectedPartner) {
             setMessages((prev) => [...prev, msg]);
           }
+          // Show browser notification for incoming messages
+          if (msg.sender_id !== user.id && Notification.permission === "granted") {
+            const senderName = profileCache.current.get(msg.sender_id) || "Someone";
+            new Notification("New Message", {
+              body: `${senderName}: ${msg.content.substring(0, 100)}`,
+              icon: "/favicon.ico",
+            });
+          }
           fetchConversations();
         }
       })
@@ -62,22 +77,44 @@ const MessagesPage = () => {
     return () => { supabase.removeChannel(channel); };
   }, [user, selectedPartner]);
 
+  const fetchProfileName = async (userId: string): Promise<string> => {
+    if (profileCache.current.has(userId)) return profileCache.current.get(userId)!;
+    const { data } = await supabase.from("profiles").select("full_name").eq("user_id", userId).single();
+    const name = data?.full_name || "User";
+    profileCache.current.set(userId, name);
+    return name;
+  };
+
   const fetchConversations = async () => {
     if (!user) return;
+    // Fetch all messages for the user
     const { data: allMsgs } = await supabase
       .from("messages")
-      .select("*, sender:profiles!messages_sender_id_fkey(full_name), receiver:profiles!messages_receiver_id_fkey(full_name)")
+      .select("*")
       .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
       .order("created_at", { ascending: false });
 
     if (!allMsgs) { setLoading(false); return; }
 
+    // Collect unique partner IDs
+    const partnerIds = new Set<string>();
+    allMsgs.forEach((m: any) => {
+      partnerIds.add(m.sender_id === user.id ? m.receiver_id : m.sender_id);
+    });
+
+    // Fetch all partner profiles at once
+    if (partnerIds.size > 0) {
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("user_id, full_name")
+        .in("user_id", Array.from(partnerIds));
+      profiles?.forEach(p => profileCache.current.set(p.user_id, p.full_name || "User"));
+    }
+
     const convMap = new Map<string, Conversation>();
     allMsgs.forEach((m: any) => {
       const partnerId = m.sender_id === user.id ? m.receiver_id : m.sender_id;
-      const partnerName = m.sender_id === user.id
-        ? (m.receiver as any)?.full_name || "User"
-        : (m.sender as any)?.full_name || "User";
+      const partnerName = profileCache.current.get(partnerId) || "User";
       if (!convMap.has(partnerId)) {
         convMap.set(partnerId, {
           partnerId,
@@ -136,6 +173,16 @@ const MessagesPage = () => {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
   };
 
+  const requestNotificationPermission = () => {
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+  };
+
+  useEffect(() => {
+    requestNotificationPermission();
+  }, []);
+
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center bg-background"><div className="animate-pulse text-muted-foreground">Loading...</div></div>;
   }
@@ -156,6 +203,7 @@ const MessagesPage = () => {
               <div className="text-center py-12 px-4">
                 <MessageSquare className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
                 <p className="text-sm text-muted-foreground">No conversations yet</p>
+                <p className="text-xs text-muted-foreground mt-1">Start by messaging a host from a listing page</p>
               </div>
             ) : (
               conversations.map((c) => (
@@ -171,12 +219,17 @@ const MessagesPage = () => {
                       </div>
                       <div className="min-w-0">
                         <p className="font-medium text-sm text-foreground truncate">{c.partnerName}</p>
-                        <p className="text-xs text-muted-foreground truncate">{c.lastMessage}</p>
+                        <p className="text-xs text-muted-foreground truncate max-w-[180px]">{c.lastMessage}</p>
                       </div>
                     </div>
-                    {c.unread > 0 && (
-                      <span className="bg-primary text-primary-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center">{c.unread}</span>
-                    )}
+                    <div className="flex flex-col items-end gap-1">
+                      <span className="text-[10px] text-muted-foreground">
+                        {new Date(c.lastTime).toLocaleDateString([], { month: "short", day: "numeric" })}
+                      </span>
+                      {c.unread > 0 && (
+                        <span className="bg-primary text-primary-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center">{c.unread}</span>
+                      )}
+                    </div>
                   </div>
                 </button>
               ))
@@ -187,10 +240,21 @@ const MessagesPage = () => {
           <div className="md:col-span-2 bg-card rounded-xl border flex flex-col">
             {selectedPartner ? (
               <>
-                <div className="px-4 py-3 border-b">
-                  <p className="font-semibold text-foreground">{selectedPartnerName}</p>
+                <div className="px-4 py-3 border-b flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">
+                    {selectedPartnerName.charAt(0) || "?"}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-foreground text-sm">{selectedPartnerName || "Loading..."}</p>
+                    <p className="text-[10px] text-muted-foreground">Online</p>
+                  </div>
                 </div>
                 <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                  {messages.length === 0 && (
+                    <div className="text-center py-8">
+                      <p className="text-sm text-muted-foreground">No messages yet. Say hello! 👋</p>
+                    </div>
+                  )}
                   {messages.map((m) => (
                     <div key={m.id} className={`flex ${m.sender_id === user?.id ? "justify-end" : "justify-start"}`}>
                       <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm ${
@@ -199,9 +263,14 @@ const MessagesPage = () => {
                           : "bg-muted text-foreground rounded-bl-md"
                       }`}>
                         {m.content}
-                        <p className={`text-[10px] mt-1 ${m.sender_id === user?.id ? "text-primary-foreground/60" : "text-muted-foreground"}`}>
-                          {new Date(m.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                        </p>
+                        <div className={`flex items-center gap-1 mt-1 ${m.sender_id === user?.id ? "justify-end" : ""}`}>
+                          <span className={`text-[10px] ${m.sender_id === user?.id ? "text-primary-foreground/60" : "text-muted-foreground"}`}>
+                            {new Date(m.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                          </span>
+                          {m.sender_id === user?.id && m.read_at && (
+                            <span className="text-[10px] text-primary-foreground/60">✓✓</span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}
