@@ -16,6 +16,7 @@ import HostDashboard from "./pages/HostDashboard";
 import MessagesPage from "./pages/MessagesPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import RoommateFinderPage from "./pages/RoommateFinderPage";
+import BookingCallbackPage from "./pages/BookingCallbackPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
