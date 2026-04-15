@@ -41,6 +41,7 @@ const App = () => (
             <Route path="/messages" element={<MessagesPage />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/roommates" element={<RoommateFinderPage />} />
+            <Route path="/booking-callback" element={<BookingCallbackPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
