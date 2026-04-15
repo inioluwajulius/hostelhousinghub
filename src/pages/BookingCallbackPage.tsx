@@ -62,7 +62,7 @@ const BookingCallbackPage = () => {
           )}
           {status === "success" && (
             <>
-              <CheckCircle className="w-16 h-16 text-green-500 mx-auto" />
+              <CheckCircle className="w-16 h-16 text-primary mx-auto" />
               <h1 className="font-display text-2xl font-bold text-foreground">Payment Successful!</h1>
               <p className="text-muted-foreground">Your booking has been confirmed. You'll receive a notification shortly.</p>
               <div className="flex gap-3 justify-center">

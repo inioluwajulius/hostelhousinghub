@@ -353,7 +353,7 @@ const ListingDetailPage = () => {
                   <p className="text-muted-foreground text-sm">No rooms listed yet. Contact the host for pricing.</p>
                 )}
 
-                <Button className="w-full" size="lg" onClick={handleBook} disabled={!selectedRoom}>Reserve Now</Button>
+                <Button className="w-full" size="lg" onClick={handleBook} disabled={!selectedRoom}>Pay & Reserve Now</Button>
 
                 {showInspectionForm ? (
                   <div className="space-y-3">
