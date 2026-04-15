@@ -99,15 +99,51 @@ const ListingDetailPage = () => {
   const handleBook = async () => {
     if (!user) { toast.error("Please sign in to book"); return; }
     if (!selectedRoom) { toast.error("No room selected"); return; }
-    const { error } = await supabase.from("bookings").insert({
+
+    const totalAmount = selectedRoom.price_per_session;
+    const serviceFee = totalAmount * 0.08;
+
+    // 1. Create the booking
+    const { data: booking, error } = await supabase.from("bookings").insert({
       student_id: user.id, room_id: selectedRoom.id, property_id: id!,
       start_date: new Date().toISOString().split("T")[0],
       end_date: new Date(Date.now() + 270 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-      booking_type: "SESSION", total_amount: selectedRoom.price_per_session,
-      service_fee: selectedRoom.price_per_session * 0.08,
-    });
-    if (error) toast.error(error.message);
-    else { toast.success("Booking request sent! The host will review it."); setHasBooked(true); }
+      booking_type: "SESSION", total_amount: totalAmount,
+      service_fee: serviceFee,
+    }).select().single();
+
+    if (error) { toast.error(error.message); return; }
+
+    // 2. Initialize Paystack payment
+    toast.info("Redirecting to payment...");
+    const { data: { session } } = await supabase.auth.getSession();
+    const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+
+    try {
+      const res = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/paystack-initialize`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session?.access_token}`,
+          },
+          body: JSON.stringify({
+            booking_id: booking.id,
+            email: user.email,
+            amount: totalAmount + serviceFee,
+          }),
+        }
+      );
+      const data = await res.json();
+      if (data.authorization_url) {
+        window.location.href = data.authorization_url;
+      } else {
+        toast.error(data.error || "Payment initialization failed");
+      }
+    } catch (err: any) {
+      toast.error("Could not connect to payment service");
+    }
   };
 
   const handleInspection = async () => {
@@ -317,7 +353,7 @@ const ListingDetailPage = () => {
                   <p className="text-muted-foreground text-sm">No rooms listed yet. Contact the host for pricing.</p>
                 )}
 
-                <Button className="w-full" size="lg" onClick={handleBook} disabled={!selectedRoom}>Reserve Now</Button>
+                <Button className="w-full" size="lg" onClick={handleBook} disabled={!selectedRoom}>Pay & Reserve Now</Button>
 
                 {showInspectionForm ? (
                   <div className="space-y-3">
