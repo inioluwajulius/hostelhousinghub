@@ -11,7 +11,7 @@ import { Shield, Building2, Flag, Users, CheckCircle2, X, AlertTriangle } from "
 import { toast } from "sonner";
 
 const AdminDashboard = () => {
-  const { user, userRole } = useAuth();
+  const { user, userRoles } = useAuth();
   const navigate = useNavigate();
   const [properties, setProperties] = useState<any[]>([]);
   const [reports, setReports] = useState<any[]>([]);
@@ -20,9 +20,9 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     if (!user) { navigate("/login"); return; }
-    if (userRole !== "admin") { navigate("/"); toast.error("Access denied"); return; }
+    if (!userRoles.includes("admin")) { navigate("/"); toast.error("Access denied"); return; }
     fetchData();
-  }, [user, userRole]);
+  }, [user, userRoles]);
 
   const fetchData = async () => {
     const [propsRes, reportsRes, profilesRes] = await Promise.all([
