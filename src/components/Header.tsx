@@ -76,6 +76,13 @@ const Header = () => {
           {user ? (
             <>
               <Link to={dashboardLink} className="block text-sm font-medium text-muted-foreground py-2" onClick={() => setMobileOpen(false)}>Dashboard</Link>
+              <Link to="/messages" className="block text-sm font-medium text-muted-foreground py-2" onClick={() => setMobileOpen(false)}>Messages</Link>
+              <Link to="/roommates" className="block text-sm font-medium text-muted-foreground py-2" onClick={() => setMobileOpen(false)}>Roommates</Link>
+              {isAdmin && (
+                <Link to="/admin" className="block text-sm font-medium text-primary py-2 flex items-center gap-1" onClick={() => setMobileOpen(false)}>
+                  <Shield className="w-4 h-4" />Admin Dashboard
+                </Link>
+              )}
               <Button variant="ghost" size="sm" onClick={() => { signOut(); setMobileOpen(false); }} className="w-full justify-start text-muted-foreground">Sign Out</Button>
             </>
           ) : (
