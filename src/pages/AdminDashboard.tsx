@@ -19,7 +19,7 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) { navigate("/login"); return; }
+    if (!user) { navigate("/admin/login"); return; }
     if (!userRoles.includes("admin")) { navigate("/"); toast.error("Access denied"); return; }
     fetchData();
   }, [user, userRoles]);
