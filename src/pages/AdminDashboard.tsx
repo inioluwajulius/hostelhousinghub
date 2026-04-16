@@ -20,9 +20,9 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     if (!user) { navigate("/login"); return; }
-    if (userRole !== "admin") { navigate("/"); toast.error("Access denied"); return; }
+    if (!userRoles.includes("admin")) { navigate("/"); toast.error("Access denied"); return; }
     fetchData();
-  }, [user, userRole]);
+  }, [user, userRoles]);
 
   const fetchData = async () => {
     const [propsRes, reportsRes, profilesRes] = await Promise.all([
