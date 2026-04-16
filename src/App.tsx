@@ -38,6 +38,7 @@ const AppRoutes = () => {
       <Route path="/dashboard" element={<StudentDashboard />} />
       <Route path="/host/dashboard" element={<HostDashboard />} />
       <Route path="/messages" element={<MessagesPage />} />
+      <Route path="/admin/login" element={<AdminLoginPage />} />
       <Route path="/admin" element={<AdminDashboard />} />
       <Route path="/roommates" element={<RoommateFinderPage />} />
       <Route path="/booking-callback" element={<BookingCallbackPage />} />
