@@ -6,9 +6,11 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const Header = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { user, userRole, profile, signOut } = useAuth();
+  const { user, userRole, userRoles, profile, signOut } = useAuth();
 
-  const dashboardLink = userRole === "host" ? "/host/dashboard" : "/dashboard";
+  const isAdmin = userRoles.includes("admin");
+  const isHost = userRoles.includes("host");
+  const dashboardLink = userRole === "admin" ? "/admin" : userRole === "host" ? "/host/dashboard" : "/dashboard";
 
   return (
     <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-md border-b">
