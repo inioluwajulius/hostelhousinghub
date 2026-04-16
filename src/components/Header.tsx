@@ -34,10 +34,10 @@ const Header = () => {
               <MessageSquare className="w-4 h-4" />Messages
             </Link>
           )}
-          {userRole === "host" && (
+          {isHost && (
             <Link to="/host/dashboard" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Host Dashboard</Link>
           )}
-          {userRole === "admin" && (
+          {isAdmin && (
             <Link to="/admin" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
               <Shield className="w-4 h-4" />Admin
             </Link>
