@@ -11,7 +11,7 @@ import { Shield, Building2, Flag, Users, CheckCircle2, X, AlertTriangle } from "
 import { toast } from "sonner";
 
 const AdminDashboard = () => {
-  const { user, userRole } = useAuth();
+  const { user, userRoles } = useAuth();
   const navigate = useNavigate();
   const [properties, setProperties] = useState<any[]>([]);
   const [reports, setReports] = useState<any[]>([]);
