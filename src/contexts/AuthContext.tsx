@@ -31,6 +31,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [userRoles, setUserRoles] = useState<string[]>([]);
   const [profile, setProfile] = useState<any>(null);
 
   const fetchUserData = async (userId: string) => {
@@ -38,7 +39,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       supabase.from("user_roles").select("role").eq("user_id", userId),
       supabase.from("profiles").select("*, universities(*)").eq("user_id", userId).single(),
     ]);
-    setUserRole(roles?.[0]?.role || null);
+    const allRoles = (roles || []).map((r: any) => r.role);
+    setUserRoles(allRoles);
+    // Prioritize: admin > host > student
+    const primary = allRoles.includes("admin") ? "admin" : allRoles.includes("host") ? "host" : allRoles[0] || null;
+    setUserRole(primary);
     setProfile(prof);
   };
 
