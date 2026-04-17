@@ -17,6 +17,7 @@ const AdminDashboard = () => {
   const [reports, setReports] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userFilter, setUserFilter] = useState<"all" | "students" | "hosts" | "pending">("all");
 
   useEffect(() => {
     if (!user) { navigate("/admin/login"); return; }
