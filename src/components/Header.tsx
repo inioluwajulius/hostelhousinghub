@@ -1,16 +1,15 @@
 import { Link } from "react-router-dom";
-import { Home, Menu, X, User, LogOut, MessageSquare, Users, Shield } from "lucide-react";
+import { Home, Menu, X, User, LogOut, MessageSquare, Users } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 
 const Header = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { user, userRole, userRoles, profile, signOut } = useAuth();
+  const { user, userRoles, profile, signOut } = useAuth();
 
-  const isAdmin = userRoles.includes("admin");
   const isHost = userRoles.includes("host");
-  const dashboardLink = userRole === "admin" ? "/admin" : userRole === "host" ? "/host/dashboard" : "/dashboard";
+  const dashboardLink = isHost ? "/host/dashboard" : "/dashboard";
 
   return (
     <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-md border-b">
@@ -36,11 +35,6 @@ const Header = () => {
           )}
           {isHost && (
             <Link to="/host/dashboard" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Host Dashboard</Link>
-          )}
-          {isAdmin && (
-            <Link to="/admin" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
-              <Shield className="w-4 h-4" />Admin
-            </Link>
           )}
         </nav>
 
@@ -78,11 +72,6 @@ const Header = () => {
               <Link to={dashboardLink} className="block text-sm font-medium text-muted-foreground py-2" onClick={() => setMobileOpen(false)}>Dashboard</Link>
               <Link to="/messages" className="block text-sm font-medium text-muted-foreground py-2" onClick={() => setMobileOpen(false)}>Messages</Link>
               <Link to="/roommates" className="block text-sm font-medium text-muted-foreground py-2" onClick={() => setMobileOpen(false)}>Roommates</Link>
-              {isAdmin && (
-                <Link to="/admin" className="block text-sm font-medium text-primary py-2 flex items-center gap-1" onClick={() => setMobileOpen(false)}>
-                  <Shield className="w-4 h-4" />Admin Dashboard
-                </Link>
-              )}
               <Button variant="ghost" size="sm" onClick={() => { signOut(); setMobileOpen(false); }} className="w-full justify-start text-muted-foreground">Sign Out</Button>
             </>
           ) : (
