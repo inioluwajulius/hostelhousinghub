@@ -7,8 +7,42 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Shield, Building2, Flag, Users, CheckCircle2, X, AlertTriangle } from "lucide-react";
+import { Shield, Building2, Flag, Users, CheckCircle2, X, AlertTriangle, IdCard, Eye } from "lucide-react";
 import { toast } from "sonner";
+
+const StudentIdViewer = ({ path }: { path: string }) => {
+  const [url, setUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [open, setOpen] = useState(false);
+
+  const load = async () => {
+    if (url) { setOpen(true); return; }
+    setLoading(true);
+    const { data, error } = await supabase.storage
+      .from("verification-docs")
+      .createSignedUrl(path, 300);
+    setLoading(false);
+    if (error || !data) { toast.error("Could not load ID image"); return; }
+    setUrl(data.signedUrl);
+    setOpen(true);
+  };
+
+  return (
+    <div className="mt-2">
+      <Button size="sm" variant="outline" onClick={load} disabled={loading} className="gap-1.5">
+        <Eye className="w-3.5 h-3.5" />{loading ? "Loading..." : "View ID Card"}
+      </Button>
+      {open && url && (
+        <div className="mt-2 p-2 border rounded-lg bg-muted/30 inline-block">
+          <img src={url} alt="Student ID" className="max-h-64 rounded object-contain" />
+          <div className="mt-1">
+            <a href={url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">Open full size ↗</a>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const AdminDashboard = () => {
   const { user, userRoles } = useAuth();
