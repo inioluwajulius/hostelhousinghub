@@ -26,6 +26,7 @@ const queryClient = new QueryClient();
 
 const AppRoutes = () => {
   useBrowserNotifications();
+  useAdminShortcut();
 
   return (
     <Routes>
