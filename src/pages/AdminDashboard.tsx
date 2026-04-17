@@ -278,6 +278,14 @@ const AdminDashboard = () => {
                             {isStudent && !u.matric_number && (
                               <p className="text-xs text-muted-foreground italic mt-2">⚠ Student has not submitted matric number — cannot verify yet.</p>
                             )}
+                            {isStudent && u.matric_number && !u.student_id_url && (
+                              <p className="text-xs text-warning italic mt-2 flex items-center gap-1">
+                                <IdCard className="w-3 h-3" />Student has not uploaded ID card yet.
+                              </p>
+                            )}
+                            {isStudent && u.student_id_url && (
+                              <StudentIdViewer path={u.student_id_url} />
+                            )}
                           </div>
                         </div>
                         <div className="flex flex-col gap-2 sm:items-end">
