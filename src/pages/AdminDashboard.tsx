@@ -17,6 +17,7 @@ const AdminDashboard = () => {
   const [reports, setReports] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userFilter, setUserFilter] = useState<"all" | "students" | "hosts" | "pending">("all");
 
   useEffect(() => {
     if (!user) { navigate("/admin/login"); return; }
@@ -59,6 +60,19 @@ const AdminDashboard = () => {
     const { error } = await supabase.from("profiles").update({ is_verified: true }).eq("user_id", userId);
     if (error) toast.error(error.message);
     else { toast.success("Host verified"); fetchData(); }
+  };
+
+  const verifyStudent = async (userId: string) => {
+    const { error } = await supabase.from("profiles").update({ is_student_verified: true }).eq("user_id", userId);
+    if (error) toast.error(error.message);
+    else { toast.success("Student verified"); fetchData(); }
+  };
+
+  const revokeVerification = async (userId: string, type: "host" | "student") => {
+    const field = type === "host" ? { is_verified: false } : { is_student_verified: false };
+    const { error } = await supabase.from("profiles").update(field).eq("user_id", userId);
+    if (error) toast.error(error.message);
+    else { toast.success("Verification revoked"); fetchData(); }
   };
 
   const pendingProperties = properties.filter(p => p.status === "PENDING");
@@ -173,32 +187,87 @@ const AdminDashboard = () => {
           </TabsContent>
 
           <TabsContent value="users">
-            <div className="space-y-4">
-              {users.map(u => (
-                <div key={u.id} className="bg-card rounded-xl border p-4 flex flex-col sm:flex-row justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
-                      {u.full_name?.charAt(0) || "U"}
-                    </div>
-                    <div>
-                      <p className="font-medium text-foreground">{u.full_name || "Unnamed"}</p>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        {u.user_roles?.map((r: any) => <Badge key={r.role} variant="outline" className="text-xs">{r.role}</Badge>)}
-                        {u.is_verified && <Badge className="bg-success/10 text-success border-0 text-xs">Verified</Badge>}
-                        {u.universities?.short_name && <span className="text-xs text-muted-foreground">{u.universities.short_name}</span>}
+            <div className="flex flex-wrap gap-2 mb-4">
+              {([
+                { key: "all", label: `All (${users.length})` },
+                { key: "students", label: `Students (${users.filter(u => u.user_roles?.some((r: any) => r.role === "student")).length})` },
+                { key: "hosts", label: `Hosts (${users.filter(u => u.user_roles?.some((r: any) => r.role === "host")).length})` },
+                { key: "pending", label: `Pending Verification (${users.filter(u => (u.user_roles?.some((r: any) => r.role === "host") && !u.is_verified) || (u.user_roles?.some((r: any) => r.role === "student") && u.matric_number && !u.is_student_verified)).length})` },
+              ] as const).map(f => (
+                <Button key={f.key} size="sm" variant={userFilter === f.key ? "default" : "outline"} onClick={() => setUserFilter(f.key)}>
+                  {f.label}
+                </Button>
+              ))}
+            </div>
+            <div className="space-y-3">
+              {users
+                .filter(u => {
+                  if (userFilter === "all") return true;
+                  if (userFilter === "students") return u.user_roles?.some((r: any) => r.role === "student");
+                  if (userFilter === "hosts") return u.user_roles?.some((r: any) => r.role === "host");
+                  if (userFilter === "pending") {
+                    const isHost = u.user_roles?.some((r: any) => r.role === "host");
+                    const isStudent = u.user_roles?.some((r: any) => r.role === "student");
+                    return (isHost && !u.is_verified) || (isStudent && u.matric_number && !u.is_student_verified);
+                  }
+                  return true;
+                })
+                .map(u => {
+                  const isHost = u.user_roles?.some((r: any) => r.role === "host");
+                  const isStudent = u.user_roles?.some((r: any) => r.role === "student");
+                  return (
+                    <div key={u.id} className="bg-card rounded-xl border p-5">
+                      <div className="flex flex-col sm:flex-row justify-between gap-4">
+                        <div className="flex items-start gap-3 flex-1">
+                          {u.profile_photo_url ? (
+                            <img src={u.profile_photo_url} alt={u.full_name} className="w-12 h-12 rounded-full object-cover" />
+                          ) : (
+                            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+                              {u.full_name?.charAt(0) || "U"}
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <p className="font-semibold text-foreground">{u.full_name || "Unnamed user"}</p>
+                              {u.user_roles?.map((r: any) => (
+                                <Badge key={r.role} variant="outline" className="text-xs capitalize">{r.role}</Badge>
+                              ))}
+                              {isHost && u.is_verified && <Badge className="bg-success/10 text-success border-0 text-xs gap-1"><CheckCircle2 className="w-3 h-3" />Host Verified</Badge>}
+                              {isStudent && u.is_student_verified && <Badge className="bg-success/10 text-success border-0 text-xs gap-1"><CheckCircle2 className="w-3 h-3" />Student Verified</Badge>}
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 mt-2 text-xs text-muted-foreground">
+                              {u.phone && <span>📞 {u.phone}</span>}
+                              {u.universities?.short_name && <span>🎓 {u.universities.short_name}</span>}
+                              {u.matric_number && <span>🆔 Matric: {u.matric_number}</span>}
+                              <span>📅 Joined {new Date(u.created_at).toLocaleDateString()}</span>
+                            </div>
+                            {isStudent && !u.matric_number && (
+                              <p className="text-xs text-muted-foreground italic mt-2">⚠ Student has not submitted matric number — cannot verify yet.</p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-2 sm:items-end">
+                          {isHost && !u.is_verified && (
+                            <Button size="sm" onClick={() => verifyHost(u.user_id)} className="gap-1">
+                              <CheckCircle2 className="w-4 h-4" />Verify Host
+                            </Button>
+                          )}
+                          {isHost && u.is_verified && (
+                            <Button size="sm" variant="ghost" onClick={() => revokeVerification(u.user_id, "host")}>Revoke Host</Button>
+                          )}
+                          {isStudent && u.matric_number && !u.is_student_verified && (
+                            <Button size="sm" onClick={() => verifyStudent(u.user_id)} className="gap-1">
+                              <CheckCircle2 className="w-4 h-4" />Verify Student
+                            </Button>
+                          )}
+                          {isStudent && u.is_student_verified && (
+                            <Button size="sm" variant="ghost" onClick={() => revokeVerification(u.user_id, "student")}>Revoke Student</Button>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="flex gap-2 items-center">
-                    {!u.is_verified && u.user_roles?.some((r: any) => r.role === "host") && (
-                      <Button size="sm" variant="outline" onClick={() => verifyHost(u.user_id)} className="gap-1">
-                        <CheckCircle2 className="w-4 h-4" />Verify Host
-                      </Button>
-                    )}
-                    <span className="text-xs text-muted-foreground">{new Date(u.created_at).toLocaleDateString()}</span>
-                  </div>
-                </div>
-              ))}
+                  );
+                })}
             </div>
           </TabsContent>
         </Tabs>

@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { useBrowserNotifications } from "@/hooks/useBrowserNotifications";
+import { useAdminShortcut } from "@/hooks/useAdminShortcut";
 import Index from "./pages/Index";
 import SearchPage from "./pages/SearchPage";
 import ListingDetailPage from "./pages/ListingDetailPage";
@@ -25,6 +26,7 @@ const queryClient = new QueryClient();
 
 const AppRoutes = () => {
   useBrowserNotifications();
+  useAdminShortcut();
 
   return (
     <Routes>
