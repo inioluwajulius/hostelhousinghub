@@ -61,6 +61,19 @@ const AdminDashboard = () => {
     else { toast.success("Host verified"); fetchData(); }
   };
 
+  const verifyStudent = async (userId: string) => {
+    const { error } = await supabase.from("profiles").update({ is_student_verified: true }).eq("user_id", userId);
+    if (error) toast.error(error.message);
+    else { toast.success("Student verified"); fetchData(); }
+  };
+
+  const revokeVerification = async (userId: string, type: "host" | "student") => {
+    const field = type === "host" ? { is_verified: false } : { is_student_verified: false };
+    const { error } = await supabase.from("profiles").update(field).eq("user_id", userId);
+    if (error) toast.error(error.message);
+    else { toast.success("Verification revoked"); fetchData(); }
+  };
+
   const pendingProperties = properties.filter(p => p.status === "PENDING");
   const pendingReports = reports.filter(r => r.status === "PENDING");
 
