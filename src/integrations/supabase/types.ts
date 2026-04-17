@@ -199,6 +199,7 @@ export type Database = {
           matric_number: string | null
           phone: string | null
           profile_photo_url: string | null
+          student_id_url: string | null
           university_id: string | null
           updated_at: string
           user_id: string
@@ -212,6 +213,7 @@ export type Database = {
           matric_number?: string | null
           phone?: string | null
           profile_photo_url?: string | null
+          student_id_url?: string | null
           university_id?: string | null
           updated_at?: string
           user_id: string
@@ -225,6 +227,7 @@ export type Database = {
           matric_number?: string | null
           phone?: string | null
           profile_photo_url?: string | null
+          student_id_url?: string | null
           university_id?: string | null
           updated_at?: string
           user_id?: string
