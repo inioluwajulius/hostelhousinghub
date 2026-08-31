@@ -23,7 +23,7 @@ const AdminLoginPage = () => {
     if (!loading && user && userRoles.includes("admin")) {
       router.push("/admin");
     }
-  }, [user, userRoles, loading, navigate]);
+  }, [user, userRoles, loading, router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
