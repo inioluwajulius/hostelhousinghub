@@ -17,10 +17,12 @@ export default function DatabaseStatusOverlay() {
           return;
         }
 
+        const apiKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || "";
         const response = await fetch(`${supabaseUrl}/rest/v1/`, {
           method: "GET",
           headers: {
-            "apikey": process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || ""
+            "apikey": apiKey,
+            "Authorization": `Bearer ${apiKey}`
           }
         });
 
