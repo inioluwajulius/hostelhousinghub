@@ -3,6 +3,7 @@ import { Home, Menu, X, User, LogOut, MessageSquare, Users } from "lucide-react"
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
+import NotificationBell from "@/components/NotificationBell";
 
 const Header = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -29,9 +30,14 @@ const Header = () => {
             <Users className="w-4 h-4" />Roommates
           </Link>
           {user && (
-            <Link to="/messages" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
-              <MessageSquare className="w-4 h-4" />Messages
-            </Link>
+            <>
+              <Link to="/messages" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+                <MessageSquare className="w-4 h-4" />Messages
+              </Link>
+              <Link to="/notifications" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+                <NotificationBell />
+              </Link>
+            </>
           )}
           {isHost && (
             <Link to="/host/dashboard" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Host Dashboard</Link>
@@ -71,6 +77,7 @@ const Header = () => {
             <>
               <Link to={dashboardLink} className="block text-sm font-medium text-muted-foreground py-2" onClick={() => setMobileOpen(false)}>Dashboard</Link>
               <Link to="/messages" className="block text-sm font-medium text-muted-foreground py-2" onClick={() => setMobileOpen(false)}>Messages</Link>
+              <Link to="/notifications" className="block text-sm font-medium text-muted-foreground py-2" onClick={() => setMobileOpen(false)}>Notifications</Link>
               <Link to="/roommates" className="block text-sm font-medium text-muted-foreground py-2" onClick={() => setMobileOpen(false)}>Roommates</Link>
               <Button variant="ghost" size="sm" onClick={() => { signOut(); setMobileOpen(false); }} className="w-full justify-start text-muted-foreground">Sign Out</Button>
             </>

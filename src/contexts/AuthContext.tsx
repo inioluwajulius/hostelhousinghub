@@ -35,16 +35,39 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [profile, setProfile] = useState<any>(null);
 
   const fetchUserData = async (userId: string) => {
-    const [{ data: roles }, { data: prof }] = await Promise.all([
-      supabase.from("user_roles").select("role").eq("user_id", userId),
-      supabase.from("profiles").select("*, universities(*)").eq("user_id", userId).single(),
-    ]);
-    const allRoles = (roles || []).map((r: any) => r.role);
-    setUserRoles(allRoles);
-    // Prioritize: admin > host > student
-    const primary = allRoles.includes("admin") ? "admin" : allRoles.includes("host") ? "host" : allRoles[0] || null;
-    setUserRole(primary);
-    setProfile(prof);
+    try {
+      const [rolesResult, profileResult] = await Promise.all([
+        supabase.from("user_roles").select("role").eq("user_id", userId),
+        supabase.from("profiles").select("*, universities(*)").eq("user_id", userId).single(),
+      ]);
+      
+      if (rolesResult.error) {
+        console.error("Error fetching user roles:", rolesResult.error);
+        setUserRoles([]);
+        setUserRole(null);
+        return;
+      }
+      
+      if (profileResult.error) {
+        console.error("Error fetching user profile:", profileResult.error);
+        setProfile(null);
+        return;
+      }
+      
+      const roles = rolesResult.data || [];
+      const prof = profileResult.data;
+      const allRoles = roles.map((r: any) => r.role);
+      setUserRoles(allRoles);
+      // Prioritize: admin > host > student
+      const primary = allRoles.includes("admin") ? "admin" : allRoles.includes("host") ? "host" : allRoles[0] || null;
+      setUserRole(primary);
+      setProfile(prof);
+    } catch (err) {
+      console.error("Error fetching user data:", err);
+      setUserRoles([]);
+      setUserRole(null);
+      setProfile(null);
+    }
   };
 
   const refreshProfile = async () => {

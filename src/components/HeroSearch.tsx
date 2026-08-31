@@ -14,9 +14,19 @@ const HeroSearch = ({ compact }: HeroSearchProps) => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    supabase.from("universities").select("*").order("name").then(({ data }) => {
-      setUniversities(data || []);
-    });
+    supabase.from("universities").select("*").order("name")
+      .then(({ data, error }) => {
+        if (error) {
+          console.error("Error loading universities:", error);
+          setUniversities([]);
+        } else {
+          setUniversities(data || []);
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to load universities:", err);
+        setUniversities([]);
+      });
   }, []);
 
   const handleSearch = () => {
