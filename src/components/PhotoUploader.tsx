@@ -1,18 +1,25 @@
 import { useState, useRef } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Upload, X, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { photoUploadAPI } from "@/lib/api";
 
 interface PhotoUploaderProps {
   propertyId: string;
   roomId?: string;
   existingPhotos?: string[];
   onUploadComplete: (urls: string[]) => void;
+  uploadType?: "property" | "profile" | "matric"; // Type of upload
 }
 
-const PhotoUploader = ({ propertyId, roomId, existingPhotos = [], onUploadComplete }: PhotoUploaderProps) => {
+const PhotoUploader = ({ 
+  propertyId, 
+  roomId, 
+  existingPhotos = [], 
+  onUploadComplete,
+  uploadType = "property"
+}: PhotoUploaderProps) => {
   const { user } = useAuth();
   const [uploading, setUploading] = useState(false);
   const [photos, setPhotos] = useState<string[]>(existingPhotos);
@@ -31,17 +38,25 @@ const PhotoUploader = ({ propertyId, roomId, existingPhotos = [], onUploadComple
         continue;
       }
 
-      const ext = file.name.split(".").pop();
-      const path = `${user.id}/${propertyId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      try {
+        let uploadedUrl: string;
 
-      const { data, error } = await supabase.storage.from("property-photos").upload(path, file);
-      if (error) {
+        if (uploadType === "property") {
+          uploadedUrl = await photoUploadAPI.uploadPropertyPhoto(propertyId, file);
+        } else if (uploadType === "profile") {
+          uploadedUrl = await photoUploadAPI.uploadProfilePhoto(user.id, file);
+        } else if (uploadType === "matric") {
+          uploadedUrl = await photoUploadAPI.uploadMatricPhoto(user.id, file);
+        } else {
+          throw new Error("Invalid upload type");
+        }
+
+        uploadedUrls.push(uploadedUrl);
+        toast.success(`${file.name} uploaded successfully`);
+      } catch (error) {
+        console.error("Upload error:", error);
         toast.error(`Failed to upload ${file.name}`);
-        continue;
       }
-
-      const { data: urlData } = supabase.storage.from("property-photos").getPublicUrl(data.path);
-      uploadedUrls.push(urlData.publicUrl);
     }
 
     const newPhotos = [...photos, ...uploadedUrls];
@@ -49,11 +64,34 @@ const PhotoUploader = ({ propertyId, roomId, existingPhotos = [], onUploadComple
     onUploadComplete(newPhotos);
     setUploading(false);
 
-    if (uploadedUrls.length > 0) toast.success(`${uploadedUrls.length} photo(s) uploaded`);
+    if (uploadedUrls.length > 0) {
+      toast.success(`${uploadedUrls.length} photo(s) uploaded successfully`);
+    }
   };
 
-  const removePhoto = (index: number) => {
+  const removePhoto = async (index: number) => {
+    const photoUrl = photos[index];
     const newPhotos = photos.filter((_, i) => i !== index);
+    
+    // Try to delete from storage
+    try {
+      const pathMatch = photoUrl.match(/\/([^?]+)/);
+      if (pathMatch) {
+        const filePath = pathMatch[1];
+        
+        if (uploadType === "property") {
+          await photoUploadAPI.deletePropertyPhoto(filePath);
+        } else if (uploadType === "profile") {
+          await photoUploadAPI.deleteProfilePhoto(filePath);
+        } else if (uploadType === "matric") {
+          await photoUploadAPI.deleteMatricPhoto(filePath);
+        }
+      }
+    } catch (error) {
+      console.error("Error deleting photo:", error);
+      // Continue anyway - just remove from UI
+    }
+    
     setPhotos(newPhotos);
     onUploadComplete(newPhotos);
   };
@@ -75,7 +113,7 @@ const PhotoUploader = ({ propertyId, roomId, existingPhotos = [], onUploadComple
           className="border-2 border-dashed rounded-xl p-8 text-center cursor-pointer hover:border-primary/50 transition-colors"
         >
           <ImageIcon className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-          <p className="text-sm text-muted-foreground">Click to upload property photos</p>
+          <p className="text-sm text-muted-foreground">Click to upload photos</p>
           <p className="text-xs text-muted-foreground mt-1">Max 5MB per file · JPG, PNG, WebP</p>
         </div>
       ) : (
