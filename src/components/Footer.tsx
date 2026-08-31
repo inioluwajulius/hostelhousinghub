@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import Link from "next/link";
 import { Home, Mail, Phone, MapPin } from "lucide-react";
 
 const Footer = () => {
@@ -23,20 +23,20 @@ const Footer = () => {
           <div>
             <h4 className="font-display text-sm font-semibold mb-4 opacity-90">For Students</h4>
             <ul className="space-y-2 text-sm opacity-70">
-              <li><Link to="/search" className="hover:opacity-100 transition-opacity">Find Housing</Link></li>
-              <li><Link to="/" className="hover:opacity-100 transition-opacity">Roommate Finder</Link></li>
-              <li><Link to="/" className="hover:opacity-100 transition-opacity">Safety Guide</Link></li>
-              <li><Link to="/" className="hover:opacity-100 transition-opacity">Student Deals</Link></li>
+              <li><Link href="/search" className="hover:opacity-100 transition-opacity">Find Housing</Link></li>
+              <li><Link href="/" className="hover:opacity-100 transition-opacity">Roommate Finder</Link></li>
+              <li><Link href="/" className="hover:opacity-100 transition-opacity">Safety Guide</Link></li>
+              <li><Link href="/" className="hover:opacity-100 transition-opacity">Student Deals</Link></li>
             </ul>
           </div>
 
           <div>
             <h4 className="font-display text-sm font-semibold mb-4 opacity-90">For Hosts</h4>
             <ul className="space-y-2 text-sm opacity-70">
-              <li><Link to="/" className="hover:opacity-100 transition-opacity">List Property</Link></li>
-              <li><Link to="/" className="hover:opacity-100 transition-opacity">Host Dashboard</Link></li>
-              <li><Link to="/" className="hover:opacity-100 transition-opacity">Pricing Plans</Link></li>
-              <li><Link to="/" className="hover:opacity-100 transition-opacity">Get Verified</Link></li>
+              <li><Link href="/" className="hover:opacity-100 transition-opacity">List Property</Link></li>
+              <li><Link href="/" className="hover:opacity-100 transition-opacity">Host Dashboard</Link></li>
+              <li><Link href="/" className="hover:opacity-100 transition-opacity">Pricing Plans</Link></li>
+              <li><Link href="/" className="hover:opacity-100 transition-opacity">Get Verified</Link></li>
             </ul>
           </div>
 

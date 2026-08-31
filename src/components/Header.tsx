@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import Link from "next/link";
 import { Home, Menu, X, User, LogOut, MessageSquare, Users } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ const Header = () => {
   return (
     <header className="sticky top-0 z-50 bg-card/80 backdrop-blur-md border-b">
       <div className="container mx-auto flex items-center justify-between h-16 px-4">
-        <Link to="/" className="flex items-center gap-2">
+        <Link href="/" className="flex items-center gap-2">
           <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center">
             <Home className="w-5 h-5 text-primary-foreground" />
           </div>
@@ -25,29 +25,29 @@ const Header = () => {
         </Link>
 
         <nav className="hidden md:flex items-center gap-6">
-          <Link to="/search" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Find Housing</Link>
-          <Link to="/roommates" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+          <Link href="/search" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Find Housing</Link>
+          <Link href="/roommates" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
             <Users className="w-4 h-4" />Roommates
           </Link>
           {user && (
             <>
-              <Link to="/messages" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+              <Link href="/messages" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
                 <MessageSquare className="w-4 h-4" />Messages
               </Link>
-              <Link to="/notifications" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+              <Link href="/notifications" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
                 <NotificationBell />
               </Link>
             </>
           )}
           {isHost && (
-            <Link to="/host/dashboard" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Host Dashboard</Link>
+            <Link href="/host/dashboard" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Host Dashboard</Link>
           )}
         </nav>
 
         <div className="hidden md:flex items-center gap-3">
           {user ? (
             <>
-              <Link to={dashboardLink}>
+              <Link href={dashboardLink}>
                 <Button variant="ghost" size="sm" className="gap-1.5">
                   <User className="w-4 h-4" />
                   {profile?.full_name?.split(" ")[0] || "Dashboard"}
@@ -59,8 +59,8 @@ const Header = () => {
             </>
           ) : (
             <>
-              <Link to="/login"><Button variant="ghost" size="sm">Sign In</Button></Link>
-              <Link to="/signup"><Button size="sm">Get Started</Button></Link>
+              <Link href="/login"><Button variant="ghost" size="sm">Sign In</Button></Link>
+              <Link href="/signup"><Button size="sm">Get Started</Button></Link>
             </>
           )}
         </div>
@@ -72,19 +72,19 @@ const Header = () => {
 
       {mobileOpen && (
         <div className="md:hidden border-t bg-card px-4 py-4 space-y-3 animate-fade-in">
-          <Link to="/search" className="block text-sm font-medium text-muted-foreground py-2" onClick={() => setMobileOpen(false)}>Find Housing</Link>
+          <Link href="/search" className="block text-sm font-medium text-muted-foreground py-2" onClick={() => setMobileOpen(false)}>Find Housing</Link>
           {user ? (
             <>
-              <Link to={dashboardLink} className="block text-sm font-medium text-muted-foreground py-2" onClick={() => setMobileOpen(false)}>Dashboard</Link>
-              <Link to="/messages" className="block text-sm font-medium text-muted-foreground py-2" onClick={() => setMobileOpen(false)}>Messages</Link>
-              <Link to="/notifications" className="block text-sm font-medium text-muted-foreground py-2" onClick={() => setMobileOpen(false)}>Notifications</Link>
-              <Link to="/roommates" className="block text-sm font-medium text-muted-foreground py-2" onClick={() => setMobileOpen(false)}>Roommates</Link>
+              <Link href={dashboardLink} className="block text-sm font-medium text-muted-foreground py-2" onClick={() => setMobileOpen(false)}>Dashboard</Link>
+              <Link href="/messages" className="block text-sm font-medium text-muted-foreground py-2" onClick={() => setMobileOpen(false)}>Messages</Link>
+              <Link href="/notifications" className="block text-sm font-medium text-muted-foreground py-2" onClick={() => setMobileOpen(false)}>Notifications</Link>
+              <Link href="/roommates" className="block text-sm font-medium text-muted-foreground py-2" onClick={() => setMobileOpen(false)}>Roommates</Link>
               <Button variant="ghost" size="sm" onClick={() => { signOut(); setMobileOpen(false); }} className="w-full justify-start text-muted-foreground">Sign Out</Button>
             </>
           ) : (
             <div className="flex gap-2 pt-2">
-              <Link to="/login" className="flex-1" onClick={() => setMobileOpen(false)}><Button variant="ghost" size="sm" className="w-full">Sign In</Button></Link>
-              <Link to="/signup" className="flex-1" onClick={() => setMobileOpen(false)}><Button size="sm" className="w-full">Get Started</Button></Link>
+              <Link href="/login" className="flex-1" onClick={() => setMobileOpen(false)}><Button variant="ghost" size="sm" className="w-full">Sign In</Button></Link>
+              <Link href="/signup" className="flex-1" onClick={() => setMobileOpen(false)}><Button size="sm" className="w-full">Get Started</Button></Link>
             </div>
           )}
         </div>

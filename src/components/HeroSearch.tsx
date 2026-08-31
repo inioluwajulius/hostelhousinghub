@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,7 +11,7 @@ interface HeroSearchProps {
 const HeroSearch = ({ compact }: HeroSearchProps) => {
   const [university, setUniversity] = useState("");
   const [universities, setUniversities] = useState<any[]>([]);
-  const navigate = useNavigate();
+  const router = useRouter();
 
   useEffect(() => {
     supabase.from("universities").select("*").order("name")
@@ -32,7 +32,7 @@ const HeroSearch = ({ compact }: HeroSearchProps) => {
   const handleSearch = () => {
     const params = new URLSearchParams();
     if (university) params.set("university", university);
-    navigate(`/search?${params.toString()}`);
+    router.push(`/search?${params.toString()}`);
   };
 
   if (compact) {

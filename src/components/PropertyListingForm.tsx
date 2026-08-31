@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { propertiesAPI, roomsAPI, universitiesAPI } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -24,7 +24,7 @@ interface PropertyListingFormProps {
 
 const PropertyListingForm = ({ propertyId, initialData, onSuccess }: PropertyListingFormProps) => {
   const { user } = useAuth();
-  const navigate = useNavigate();
+  const router = useRouter();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [universities, setUniversities] = useState<any[]>([]);
@@ -155,7 +155,7 @@ const PropertyListingForm = ({ propertyId, initialData, onSuccess }: PropertyLis
       if (onSuccess) {
         onSuccess(pId);
       } else {
-        navigate(`/host/property/${pId}`);
+        router.push(`/host/property/${pId}`);
       }
     } catch (err) {
       console.error("Error saving property:", err);
@@ -365,7 +365,7 @@ const PropertyListingForm = ({ propertyId, initialData, onSuccess }: PropertyLis
 
         {/* ACTION BUTTONS */}
         <div className="flex gap-3 justify-end">
-          <Button type="button" variant="outline" onClick={() => navigate(-1)}>
+          <Button type="button" variant="outline" onClick={() => router.back()}>
             Cancel
           </Button>
           <Button type="submit" disabled={loading}>

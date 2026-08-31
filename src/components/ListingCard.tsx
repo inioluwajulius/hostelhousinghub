@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import Link from "next/link";
 import { MapPin, Star, BadgeCheck, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
@@ -44,7 +44,7 @@ const ListingCard = ({ property }: ListingCardProps) => {
   const available = property.totalAvailable || property.availableRooms || 0;
 
   return (
-    <Link to={`/listing/${property.id}`} className="group block rounded-xl overflow-hidden bg-card shadow-card card-hover">
+    <Link href={`/listing/${property.id}`} className="group block rounded-xl overflow-hidden bg-card shadow-card card-hover">
       <div className="relative aspect-[4/3] overflow-hidden">
         <img
           src={image}
