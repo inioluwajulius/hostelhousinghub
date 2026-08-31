@@ -24,7 +24,7 @@ const SignUpPage = () => {
 
   useEffect(() => {
     if (user) router.push("/");
-  }, [user, navigate]);
+  }, [user, router]);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();

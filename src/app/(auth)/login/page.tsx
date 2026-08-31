@@ -24,7 +24,7 @@ const LoginPage = () => {
     if (user && userRole) {
       router.push(userRole === "host" ? "/host/dashboard" : "/dashboard");
     }
-  }, [user, userRole, navigate]);
+  }, [user, userRole, router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

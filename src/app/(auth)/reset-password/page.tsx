@@ -23,7 +23,7 @@ const ResetPasswordPage = () => {
       setTokenValid(false);
       router.push("/login");
     }
-  }, [navigate]);
+  }, [router]);
 
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
