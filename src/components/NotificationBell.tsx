@@ -23,16 +23,19 @@ export default function NotificationBell() {
     if (!user?.id) return;
     loadNotifications();
 
+    let channel: any = null;
     // Subscribe to real-time notifications
-    const subscription = enhancedNotificationsAPI.subscribeToNotifications(user.id, (newNotification) => {
+    enhancedNotificationsAPI.subscribeToNotifications(user.id, (newNotification) => {
       setNotifications((prev) => [newNotification, ...prev]);
       setUnreadCount((prev) => prev + 1);
+    }).then(ch => {
+      channel = ch;
     });
 
     return () => {
       // Cleanup subscription
-      if (subscription) {
-        subscription.unsubscribe?.();
+      if (channel) {
+        channel.unsubscribe?.();
       }
     };
   }, [user?.id]);

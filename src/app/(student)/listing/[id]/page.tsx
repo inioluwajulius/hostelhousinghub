@@ -46,7 +46,7 @@ const roomTypeLabels: Record<string, string> = {
 const formatPrice = (amount: number) => new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", minimumFractionDigits: 0 }).format(amount);
 
 const ListingDetailPage = () => {
-  const { id } = useParams();
+  const { id } = useParams() as { id: string };
   const { user, userRole } = useAuth();
   const router = useRouter();
   const [property, setProperty] = useState<any>(null);
@@ -65,7 +65,7 @@ const ListingDetailPage = () => {
     if (!id) return;
     const { data: prop } = await supabase.from("properties")
       .select("*, universities(name, short_name), rooms(*)")
-      .eq("id", id as string).single();
+      .eq("id", id).single();
 
     if (prop) {
       setProperty(prop);

@@ -14,19 +14,21 @@ const HeroSearch = ({ compact }: HeroSearchProps) => {
   const router = useRouter();
 
   useEffect(() => {
-    supabase.from("universities").select("*").order("name")
-      .then(({ data, error }) => {
+    const fetchUnis = async () => {
+      try {
+        const { data, error } = await supabase.from("universities").select("*").order("name");
         if (error) {
           console.error("Error loading universities:", error);
           setUniversities([]);
         } else {
           setUniversities(data || []);
         }
-      })
-      .catch((err) => {
+      } catch (err) {
         console.error("Failed to load universities:", err);
         setUniversities([]);
-      });
+      }
+    };
+    fetchUnis();
   }, []);
 
   const handleSearch = () => {

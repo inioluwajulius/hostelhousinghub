@@ -47,7 +47,7 @@ const RoommateFinderPage = () => {
     const allRequests = reqRes.data || [];
     
     // Fetch profile names for each request
-    const userIds = [...new Set(allRequests.map((r: any) => r.user_id))];
+    const userIds = allRequests.map((r: any) => r.user_id).filter((v, i, a) => a.indexOf(v) === i);
     let profileMap: Record<string, string> = {};
     if (userIds.length > 0) {
       const { data: profiles } = await supabase.from("profiles").select("user_id, full_name").in("user_id", userIds);

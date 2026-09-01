@@ -1,5 +1,7 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
 import { useState, useEffect } from "react";
 import { Search, Shield, Star, MapPin, BadgeCheck, Users, GraduationCap, Building2, ArrowRight } from "lucide-react";
 import Header from "@/components/Header";
@@ -12,8 +14,20 @@ import Link from "next/link";
 import heroBg from "@/assets/hero-bg.jpg";
 
 const Index = () => {
+  const { user, userRoles, loading } = useAuth();
+  const router = useRouter();
   const [featured, setFeatured] = useState<any[]>([]);
   const [universities, setUniversities] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!loading && user) {
+      if (userRoles?.includes("host")) {
+        router.replace("/host/dashboard");
+      } else {
+        router.replace("/dashboard");
+      }
+    }
+  }, [user, userRoles, loading, router]);
 
   useEffect(() => {
     // Fetch featured properties & universities
@@ -33,6 +47,10 @@ const Index = () => {
       setUniversities(uniRes.data || []);
     });
   }, []);
+
+  if (loading || user) {
+    return <div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div></div>;
+  }
 
   const stats = [
     { value: "2.1M+", label: "Students Served", icon: GraduationCap },
@@ -55,7 +73,7 @@ const Index = () => {
       <section className="relative overflow-hidden">
         <div className="absolute inset-0">
           {/* using standard img instead of next/image to prevent immediate configuration issues with static assets */}
-          <img src={heroBg.src || heroBg} alt="" className="w-full h-full object-cover" width={1920} height={1080} />
+          <img src={typeof heroBg === "string" ? heroBg : heroBg.src} alt="" className="w-full h-full object-cover" width={1920} height={1080} />
           <div className="absolute inset-0 bg-gradient-to-r from-foreground/85 via-foreground/70 to-foreground/40" />
         </div>
         <div className="relative container mx-auto px-4 py-20 md:py-32">
@@ -181,7 +199,7 @@ const Index = () => {
             </div>
             <div className="relative hidden lg:block">
               <div className="aspect-square rounded-3xl bg-muted/50 border overflow-hidden shadow-2xl">
-                <img src={heroBg.src || heroBg} alt="Students" className="w-full h-full object-cover opacity-90 transition-opacity" />
+                <img src={typeof heroBg === "string" ? heroBg : heroBg.src} alt="Students" className="w-full h-full object-cover opacity-90 transition-opacity" />
               </div>
               <div className="absolute -bottom-8 -left-8 bg-card p-6 rounded-2xl border shadow-xl">
                 <div className="flex items-center gap-4">

@@ -294,7 +294,7 @@ export default function PaymentCheckout({
           </CardContent>
         </Card>
       ) : (
-        <Button onClick={initializePayment} size="lg" className="w-full gap-2" disabled={paymentStatus === "processing"}>
+        <Button onClick={initializePayment} size="lg" className="w-full gap-2">
           <CreditCard className="h-5 w-5" />
           Pay ₦{amount.toLocaleString()} with Paystack
         </Button>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { propertiesAPI, roomsAPI, universitiesAPI } from "@/lib/api";
@@ -83,7 +83,7 @@ const PropertyListingForm = ({ propertyId, initialData, onSuccess }: PropertyLis
   ];
 
   // Load universities on mount
-  React.useEffect(() => {
+  useEffect(() => {
     const loadUniversities = async () => {
       try {
         const unis = await universitiesAPI.getUniversities();

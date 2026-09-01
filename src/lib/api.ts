@@ -22,8 +22,8 @@ export const propertiesAPI = {
       .eq("is_active", true);
 
     if (filters?.universityId) query = query.eq("university_id", filters.universityId);
-    if (filters?.propertyType) query = query.eq("property_type", filters.propertyType);
-    if (filters?.genderRestriction) query = query.eq("gender_restriction", filters.genderRestriction);
+    if (filters?.propertyType) query = query.eq("property_type", filters.propertyType as any);
+    if (filters?.genderRestriction) query = query.eq("gender_restriction", filters.genderRestriction as any);
 
     const { data, error } = await query.order("created_at", { ascending: false });
 
@@ -211,7 +211,7 @@ export const bookingsAPI = {
   async updateBookingStatus(id: string, status: "APPROVED" | "DECLINED" | "COMPLETED" | "PENDING") {
     const { data, error } = await supabase
       .from("bookings")
-      .update({ status })
+      .update({ status: status as any })
       .eq("id", id)
       .select()
       .single();
@@ -378,7 +378,7 @@ export const inspectionsAPI = {
           student_id: studentId,
           property_id: propertyId,
           scheduled_at: scheduledAt,
-          status: "SCHEDULED",
+          status: "PENDING",
           created_at: new Date().toISOString(),
         },
       ])
@@ -420,7 +420,7 @@ export const inspectionsAPI = {
   async updateInspectionStatus(id: string, status: "SCHEDULED" | "COMPLETED" | "CANCELLED") {
     const { data, error } = await supabase
       .from("inspections")
-      .update({ status })
+      .update({ status: status as any })
       .eq("id", id)
       .select()
       .single();
@@ -524,9 +524,9 @@ export const notificationsAPI = {
           user_id: userId,
           type,
           message,
-          related_id: relatedId,
+          title: "New Notification",
+          metadata: relatedId ? { related_id: relatedId } : {},
           is_read: false,
-          created_at: new Date().toISOString(),
         },
       ])
       .select()
@@ -617,7 +617,7 @@ export const userRolesAPI = {
       .from("user_roles")
       .delete()
       .eq("user_id", userId)
-      .eq("role", role);
+      .eq("role", role as any);
 
     if (error) throw error;
   },
@@ -637,7 +637,7 @@ export const userRolesAPI = {
 export const matricVerificationAPI = {
   async submitMatricVerification(userId: string, universityId: string, matricNumber: string, matricPhotoUrl: string) {
     const { data, error } = await supabase
-      .from("matric_verifications")
+      .from("matric_verifications" as any)
       .insert([
         {
           user_id: userId,
@@ -657,7 +657,7 @@ export const matricVerificationAPI = {
 
   async getMatricVerificationStatus(userId: string) {
     const { data, error } = await supabase
-      .from("matric_verifications")
+      .from("matric_verifications" as any)
       .select("*")
       .eq("user_id", userId)
       .order("submitted_at", { ascending: false })
@@ -673,7 +673,7 @@ export const matricVerificationAPI = {
 
   async approveMatricVerification(verificationId: string, adminId: string) {
     const { data, error } = await supabase
-      .from("matric_verifications")
+      .from("matric_verifications" as any)
       .update({
         status: "APPROVED",
         verified_at: new Date().toISOString(),
@@ -686,11 +686,11 @@ export const matricVerificationAPI = {
     if (error) throw error;
 
     // Update profile to mark as verified
-    if (data && data.user_id) {
+    if (data && (data as any).user_id) {
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
         .select("id")
-        .eq("id", data.user_id)
+        .eq("id", (data as any).user_id)
         .single();
 
       if (!profileError) {
@@ -706,7 +706,7 @@ export const matricVerificationAPI = {
 
   async rejectMatricVerification(verificationId: string, adminId: string, rejectionReason: string) {
     const { data, error } = await supabase
-      .from("matric_verifications")
+      .from("matric_verifications" as any)
       .update({
         status: "REJECTED",
         verified_at: new Date().toISOString(),
@@ -723,7 +723,7 @@ export const matricVerificationAPI = {
 
   async getPendingVerifications(universityId?: string) {
     let query = supabase
-      .from("matric_verifications")
+      .from("matric_verifications" as any)
       .select(`
         *,
         user:profiles(id, full_name, profile_photo_url, email),
@@ -743,7 +743,7 @@ export const matricVerificationAPI = {
 
   async isStudentVerified(userId: string) {
     const { data, error } = await supabase
-      .from("matric_verifications")
+      .from("matric_verifications" as any)
       .select("id")
       .eq("user_id", userId)
       .eq("status", "APPROVED")
