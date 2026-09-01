@@ -65,7 +65,7 @@ const ListingDetailPage = () => {
     if (!id) return;
     const { data: prop } = await supabase.from("properties")
       .select("*, universities(name, short_name), rooms(*)")
-      .eq("id", id).single();
+      .eq("id", id as string).single();
 
     if (prop) {
       setProperty(prop);
