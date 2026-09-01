@@ -58,9 +58,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const prof = profileResult.data;
       const allRoles = roles.map((r: any) => r.role);
       setUserRoles(allRoles);
-      // Prioritize: admin > host > student
-      const primary = allRoles.includes("admin") ? "admin" : allRoles.includes("host") ? "host" : allRoles[0] || null;
-      setUserRole(primary);
+      
+      let activeRole = null;
+      if (typeof window !== "undefined") {
+        const storedRole = localStorage.getItem("activeRole");
+        if (storedRole && allRoles.includes(storedRole)) {
+          activeRole = storedRole;
+        }
+      }
+      
+      if (!activeRole) {
+        // Prioritize: admin > host > student
+        activeRole = allRoles.includes("admin") ? "admin" : allRoles.includes("host") ? "host" : allRoles[0] || null;
+      }
+      
+      setUserRole(activeRole);
       setProfile(prof);
     } catch (err) {
       console.error("Error fetching user data:", err);

@@ -3,13 +3,12 @@
 import { useState, useEffect } from "react";
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-;
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Home, Eye, EyeOff } from "lucide-react";
+import { Home, Eye, EyeOff, GraduationCap, Building2 } from "lucide-react";
 import { toast } from "sonner";
 
 const LoginPage = () => {
@@ -17,6 +16,7 @@ const LoginPage = () => {
   const { user, userRole } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState<"student" | "host">("student");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -33,12 +33,32 @@ const LoginPage = () => {
       return;
     }
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false);
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    
     if (error) {
+      setLoading(false);
       toast.error(error.message);
-    } else {
+    } else if (data?.user) {
+      // Check if user has the selected role
+      const { data: rolesData } = await supabase.from("user_roles").select("role").eq("user_id", data.user.id);
+      const userRolesList = rolesData?.map(r => r.role) || [];
+      
+      if (!userRolesList.includes(role) && !userRolesList.includes("admin")) {
+        setLoading(false);
+        await supabase.auth.signOut();
+        toast.error(`You don't have a ${role === 'host' ? 'Host' : 'Student'} account yet. Please sign up.`);
+        return;
+      }
+      
+      if (typeof window !== "undefined") {
+        localStorage.setItem("activeRole", role);
+      }
+      
+      // Dispatch storage event so AuthContext can re-evaluate if needed
+      window.dispatchEvent(new Event("storage"));
+      
       toast.success("Welcome back!");
+      router.push(role === "host" ? "/host/dashboard" : "/dashboard");
     }
   };
 
@@ -72,6 +92,29 @@ const LoginPage = () => {
             </Link>
             <h2 className="font-display text-3xl font-bold text-foreground">Sign In</h2>
             <p className="text-muted-foreground mt-2">Enter your credentials to continue</p>
+          </div>
+
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => setRole("student")}
+              className={`flex-1 flex items-center gap-2 justify-center p-4 rounded-xl border-2 transition-all ${
+                role === "student" ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/30"
+              }`}
+            >
+              <GraduationCap className={`w-5 h-5 ${role === "student" ? "text-primary" : "text-muted-foreground"}`} />
+              <span className={`font-medium text-sm ${role === "student" ? "text-primary" : "text-muted-foreground"}`}>Student</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setRole("host")}
+              className={`flex-1 flex items-center gap-2 justify-center p-4 rounded-xl border-2 transition-all ${
+                role === "host" ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/30"
+              }`}
+            >
+              <Building2 className={`w-5 h-5 ${role === "host" ? "text-primary" : "text-muted-foreground"}`} />
+              <span className={`font-medium text-sm ${role === "host" ? "text-primary" : "text-muted-foreground"}`}>Host</span>
+            </button>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-4">

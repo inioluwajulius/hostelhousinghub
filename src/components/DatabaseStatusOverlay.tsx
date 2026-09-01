@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { DatabaseZap, ServerCrash } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function DatabaseStatusOverlay() {
   const [isDown, setIsDown] = useState(false);
@@ -10,23 +11,9 @@ export default function DatabaseStatusOverlay() {
   useEffect(() => {
     const checkDatabaseHealth = async () => {
       try {
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-        if (!supabaseUrl) {
-          setIsDown(true);
-          setIsChecking(false);
-          return;
-        }
-
-        const apiKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || "";
-        const response = await fetch(`${supabaseUrl}/rest/v1/`, {
-          method: "GET",
-          headers: {
-            "apikey": apiKey,
-            "Authorization": `Bearer ${apiKey}`
-          }
-        });
-
-        if (response.status === 503 || response.status === 502) {
+        const { error } = await supabase.from("universities").select("id").limit(1);
+        
+        if (error && (error.code === "503" || error.code === "502")) {
           setIsDown(true);
         } else {
           setIsDown(false);

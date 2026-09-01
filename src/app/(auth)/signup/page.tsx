@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-;
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -14,7 +13,7 @@ import { toast } from "sonner";
 
 const SignUpPage = () => {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, userRole } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
@@ -23,8 +22,10 @@ const SignUpPage = () => {
   const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
-    if (user) router.push("/");
-  }, [user, router]);
+    if (user && userRole) {
+      router.push(userRole === "host" ? "/host/dashboard" : "/dashboard");
+    }
+  }, [user, userRole, router]);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,10 +46,62 @@ const SignUpPage = () => {
         emailRedirectTo: window.location.origin,
       },
     });
-    setLoading(false);
-    if (error) {
+    
+    if (error && error.message.includes("already registered")) {
+      // Try to sign in the user to append the role
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (signInError) {
+        setLoading(false);
+        // If wrong password, show a clear message
+        if (signInError.message.includes("Invalid login credentials")) {
+           toast.error("An account with this email already exists. Please use the correct password to add this role to your account, or Sign In.");
+        } else {
+           toast.error(error.message);
+        }
+        return;
+      }
+
+      if (signInData?.user) {
+        // Successfully signed in, now check if they already have the role
+        const { data: rolesData } = await supabase.from("user_roles").select("role").eq("user_id", signInData.user.id);
+        const userRolesList = rolesData?.map(r => r.role) || [];
+        
+        if (!userRolesList.includes(role)) {
+          // They don't have the role, so let's insert it
+          const { error: insertError } = await supabase.from("user_roles").insert({
+            user_id: signInData.user.id,
+            role: role as any
+          });
+          
+          if (insertError) {
+            setLoading(false);
+            toast.error("Failed to add new role to your account.");
+            return;
+          }
+          
+          toast.success(`Successfully added ${role === "host" ? "Host" : "Student"} role to your account!`);
+        } else {
+          toast.success("Welcome back! You already have this role.");
+        }
+
+        if (typeof window !== "undefined") {
+          localStorage.setItem("activeRole", role);
+        }
+        window.dispatchEvent(new Event("storage"));
+        
+        setLoading(false);
+        router.push(role === "host" ? "/host/dashboard" : "/dashboard");
+        return;
+      }
+    } else if (error) {
+      setLoading(false);
       toast.error(error.message);
     } else {
+      setLoading(false);
       toast.success("Account created! Check your email to verify.");
       router.push("/login");
     }

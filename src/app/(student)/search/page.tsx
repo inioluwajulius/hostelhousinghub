@@ -28,7 +28,7 @@ const genderLabels: Record<string, string> = { ANY: "Mixed", MALE_ONLY: "Male On
 const amenityList = ["WiFi", "Generator", "Borehole", "CCTV", "Parking", "Security Guard", "Reading Room", "Study Hall", "Laundry Area", "AC", "Furnished", "Gym", "Common Room"];
 
 const SearchPage = () => {
-  const [searchParams] = useSearchParams();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const selectedUni = searchParams.get("university") || "";
   const [typeFilter, setTypeFilter] = useState("");

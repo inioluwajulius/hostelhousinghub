@@ -23,7 +23,7 @@ interface Conversation {
 const MessagesPage = () => {
   const { user } = useAuth();
   const router = useRouter();
-  const [searchParams] = useSearchParams();
+  const searchParams = useSearchParams();
   const initialPartnerId = searchParams.get("with") || "";
 
   const [conversations, setConversations] = useState<Conversation[]>([]);

@@ -38,7 +38,7 @@ const StudentDashboard = () => {
       supabase.from("bookings").select("*, properties(title, address, university_id, universities(short_name)), rooms(room_type, price_per_session)").eq("student_id", user.id).order("created_at", { ascending: false }),
       supabase.from("saved_listings").select("*, properties(*, universities(short_name))").eq("user_id", user.id).order("created_at", { ascending: false }),
       supabase.from("notifications").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
-      supabase.from("messages").select("*, sender:profiles!messages_sender_id_fkey(full_name)").eq("receiver_id", user.id).order("created_at", { ascending: false }).limit(20),
+      supabase.from("messages").select("*").eq("receiver_id", user.id).order("created_at", { ascending: false }).limit(20),
       supabase.from("universities").select("*").order("name"),
     ]);
     setBookings(bookingsRes.data || []);

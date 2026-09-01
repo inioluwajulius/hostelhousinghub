@@ -17,8 +17,7 @@ export const propertiesAPI = {
         *,
         universities(id, name, short_name, latitude, longitude),
         rooms(id, room_type, price_per_session, price_per_month, available_count, photos),
-        reviews(id, rating, comment, reviewer_id),
-        host:profiles(id, full_name, profile_photo_url)
+        reviews(id, rating, comment, reviewer_id)
       `)
       .eq("is_active", true);
 
@@ -75,8 +74,7 @@ export const propertiesAPI = {
         *,
         universities(id, name, short_name, latitude, longitude),
         rooms(id, room_type, price_per_session, price_per_month, available_count, photos, amenities),
-        reviews(id, rating, comment, reviewer_id, created_at, reviewer:profiles(full_name, profile_photo_url)),
-        host:profiles(id, full_name, phone, profile_photo_url, is_verified)
+        reviews(id, rating, comment, reviewer_id, created_at, reviewer:profiles(full_name, profile_photo_url))
       `)
       .eq("id", id)
       .single();
@@ -316,11 +314,7 @@ export const messagesAPI = {
   async getConversation(userId1: string, userId2: string) {
     const { data, error } = await supabase
       .from("messages")
-      .select(`
-        *,
-        sender:profiles(id, full_name, profile_photo_url),
-        receiver:profiles(id, full_name, profile_photo_url)
-      `)
+      .select("*")
       .or(
         `and(sender_id.eq.${userId1},receiver_id.eq.${userId2}),and(sender_id.eq.${userId2},receiver_id.eq.${userId1})`
       )
@@ -333,11 +327,7 @@ export const messagesAPI = {
   async getConversations(userId: string) {
     const { data, error } = await supabase
       .from("messages")
-      .select(`
-        *,
-        sender:profiles(id, full_name, profile_photo_url),
-        receiver:profiles(id, full_name, profile_photo_url)
-      `)
+      .select("*")
       .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`)
       .order("created_at", { ascending: false });
 
@@ -404,8 +394,7 @@ export const inspectionsAPI = {
       .from("inspections")
       .select(`
         *,
-        property:properties(id, title, address, host_id),
-        host:profiles(id, full_name, phone)
+        property:properties(id, title, address, host_id)
       `)
       .eq("student_id", studentId)
       .order("scheduled_at", { ascending: true });
@@ -1354,11 +1343,21 @@ export const enhancedNotificationsAPI = {
   },
 
   async subscribeToNotifications(userId: string, callback: (notification: any) => void) {
+    const channelName = `notifications_for_${userId}_${Math.random().toString(36).substring(7)}`;
     const subscription = supabase
-      .from(`notifications:user_id=eq.${userId}`)
-      .on("INSERT", (payload) => {
-        callback(payload.new);
-      })
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${userId}`
+        },
+        (payload) => {
+          callback(payload.new);
+        }
+      )
       .subscribe();
 
     return subscription;

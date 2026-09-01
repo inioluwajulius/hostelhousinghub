@@ -10,7 +10,7 @@ import { CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const BookingCallbackPage = () => {
-  const [searchParams] = useSearchParams();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const [status, setStatus] = useState<"verifying" | "success" | "failed">("verifying");
   const [bookingId, setBookingId] = useState<string | null>(null);
