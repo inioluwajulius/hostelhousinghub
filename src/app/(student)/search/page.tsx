@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { Suspense } from "react";
 ;
 import { MapPin, ArrowLeft, Map, List, SlidersHorizontal, X } from "lucide-react";
 import Header from "@/components/Header";
@@ -27,7 +28,7 @@ const genderOptions = ["ANY", "MALE_ONLY", "FEMALE_ONLY"] as const;
 const genderLabels: Record<string, string> = { ANY: "Mixed", MALE_ONLY: "Male Only", FEMALE_ONLY: "Female Only" };
 const amenityList = ["WiFi", "Generator", "Borehole", "CCTV", "Parking", "Security Guard", "Reading Room", "Study Hall", "Laundry Area", "AC", "Furnished", "Gym", "Common Room"];
 
-const SearchPage = () => {
+const SearchContent = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
   const selectedUni = searchParams.get("university") || "";
@@ -252,5 +253,11 @@ const SearchPage = () => {
     </div>
   );
 };
+
+const SearchPage = () => (
+  <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-background"><div className="animate-pulse text-muted-foreground">Loading...</div></div>}>
+    <SearchContent />
+  </Suspense>
+);
 
 export default SearchPage;

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense } from "react";
 ;
 import { useAuth } from "@/contexts/AuthContext";
 import Header from "@/components/Header";
@@ -20,7 +21,7 @@ interface Conversation {
   unread: number;
 }
 
-const MessagesPage = () => {
+const MessagesContent = () => {
   const { user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -309,5 +310,11 @@ const MessagesPage = () => {
     </div>
   );
 };
+
+const MessagesPage = () => (
+  <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-background"><div className="animate-pulse text-muted-foreground">Loading...</div></div>}>
+    <MessagesContent />
+  </Suspense>
+);
 
 export default MessagesPage;

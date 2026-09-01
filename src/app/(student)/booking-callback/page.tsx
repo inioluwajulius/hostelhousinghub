@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from 'next/navigation';
+import { Suspense } from "react";
 ;
 import { supabase } from "@/integrations/supabase/client";
 import Header from "@/components/Header";
@@ -9,7 +10,7 @@ import Footer from "@/components/Footer";
 import { CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const BookingCallbackPage = () => {
+const BookingCallbackContent = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [status, setStatus] = useState<"verifying" | "success" | "failed">("verifying");
@@ -91,5 +92,11 @@ const BookingCallbackPage = () => {
     </div>
   );
 };
+
+const BookingCallbackPage = () => (
+  <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-background"><div className="animate-pulse text-muted-foreground">Loading...</div></div>}>
+    <BookingCallbackContent />
+  </Suspense>
+);
 
 export default BookingCallbackPage;
