@@ -80,7 +80,7 @@ const BookingCallbackPage = () => {
               <h1 className="font-display text-2xl font-bold text-foreground">Payment Failed</h1>
               <p className="text-muted-foreground">We couldn't verify your payment. Please try again or contact support.</p>
               <div className="flex gap-3 justify-center">
-                <Button onClick={() => router.push(-1)}>Go Back</Button>
+                <Button onClick={() => router.back()}>Go Back</Button>
                 <Button variant="outline" onClick={() => router.push("/search")}>Browse Listings</Button>
               </div>
             </>
