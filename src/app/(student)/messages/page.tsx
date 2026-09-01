@@ -195,7 +195,7 @@ const MessagesPage = () => {
       <Header />
       <main className="flex-1 container mx-auto px-4 py-6">
         <div className="flex items-center gap-3 mb-6">
-          <Button variant="ghost" size="icon" onClick={() => router.push(-1)}><ArrowLeft className="w-5 h-5" /></Button>
+          <Button variant="ghost" size="icon" onClick={() => router.back()}><ArrowLeft className="w-5 h-5" /></Button>
           <h1 className="font-display text-2xl font-bold">Messages</h1>
         </div>
 
