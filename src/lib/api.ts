@@ -1521,7 +1521,7 @@ export const communityVerificationAPI = {
       return null; // Not found
     }
     if (error) throw error;
-    return data?.vote_type || null;
+    return (data as any)?.vote_type || null;
   },
 
   async getPropertyFlags(propertyId: string) {
@@ -1589,6 +1589,7 @@ export const paymentWebhookAPI = {
     if (bookingError) {
       throw new Error("Booking not found for payment reference");
     }
+    const paymentBooking = booking as any;
 
     // Update booking status to CONFIRMED
     const { data: updated, error: updateError } = await supabase
@@ -1597,7 +1598,7 @@ export const paymentWebhookAPI = {
         status: "CONFIRMED",
         paid_at: new Date().toISOString(),
       })
-      .eq("id", booking.id)
+      .eq("id", paymentBooking.id)
       .select()
       .single();
 
@@ -1605,18 +1606,18 @@ export const paymentWebhookAPI = {
 
     // Create notification for student
     await notificationsAPI.createNotification(
-      booking.student_id,
+      paymentBooking.student_id,
       "payment",
-      `Payment confirmed for booking at ${booking.property_id}. Your reservation is confirmed!`,
-      booking.id
+      `Payment confirmed for booking at ${paymentBooking.property_id}. Your reservation is confirmed!`,
+      paymentBooking.id
     );
 
     // Create notification for host
     await notificationsAPI.createNotification(
-      booking.host_id,
+      paymentBooking.host_id,
       "booking",
-      `Payment received! New booking confirmed. Amount: ₦${booking.amount?.toLocaleString()}`,
-      booking.id
+      `Payment received! New booking confirmed. Amount: ₦${paymentBooking.amount?.toLocaleString()}`,
+      paymentBooking.id
     );
 
     return updated;
@@ -1631,6 +1632,7 @@ export const paymentWebhookAPI = {
 
     if (error && error.code !== "PGRST116") throw error;
     if (!booking) return;
+    const paymentBooking = booking as any;
 
     // Update booking status to CANCELLED
     await supabase
@@ -1638,14 +1640,14 @@ export const paymentWebhookAPI = {
       .update({
         status: "CANCELLED",
       })
-      .eq("id", booking.id);
+      .eq("id", paymentBooking.id);
 
     // Notify student
     await notificationsAPI.createNotification(
-      booking.student_id,
+      paymentBooking.student_id,
       "payment",
       `Payment failed: ${reason}. Please try again or contact support.`,
-      booking.id
+      paymentBooking.id
     );
   },
 
@@ -1657,14 +1659,15 @@ export const paymentWebhookAPI = {
       .single();
 
     if (error) throw error;
+    const paymentStatus = data as any;
 
     return {
       bookingId,
-      status: data.status,
-      amount: data.amount,
-      paidAt: data.paid_at,
-      isPaid: data.status === "CONFIRMED" || !!data.paid_at,
-      reference: data.payment_reference,
+      status: paymentStatus.status,
+      amount: paymentStatus.amount,
+      paidAt: paymentStatus.paid_at,
+      isPaid: paymentStatus.status === "CONFIRMED" || !!paymentStatus.paid_at,
+      reference: paymentStatus.payment_reference,
     };
   },
 
