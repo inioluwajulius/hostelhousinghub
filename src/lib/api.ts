@@ -697,7 +697,7 @@ export const matricVerificationAPI = {
         await supabase
           .from("profiles")
           .update({ is_verified: true })
-          .eq("id", data.user_id);
+          .eq("id", (data as any).user_id);
       }
     }
 
@@ -906,7 +906,7 @@ export const availabilityAPI = {
 
   async blockDates(propertyId: string, startDate: string, endDate: string, reason: string) {
     const { data, error } = await supabase
-      .from("blocked_dates")
+      .from("blocked_dates" as any)
       .insert([
         {
           property_id: propertyId,
@@ -925,7 +925,7 @@ export const availabilityAPI = {
 
   async getBlockedDates(propertyId: string) {
     const { data, error } = await supabase
-      .from("blocked_dates")
+      .from("blocked_dates" as any)
       .select("*")
       .eq("property_id", propertyId)
       .gte("end_date", new Date().toISOString().split("T")[0])
@@ -937,7 +937,7 @@ export const availabilityAPI = {
 
   async unblockDates(blockedDateId: string) {
     const { error } = await supabase
-      .from("blocked_dates")
+      .from("blocked_dates" as any)
       .delete()
       .eq("id", blockedDateId);
 
@@ -994,10 +994,19 @@ export const availabilityAPI = {
 // ============= ANALYTICS & EARNINGS =============
 export const analyticsAPI = {
   async getHostEarnings(hostId: string, startDate?: string, endDate?: string) {
+    const { data: properties, error: propertiesError } = await supabase
+      .from("properties")
+      .select("id")
+      .eq("host_id", hostId);
+
+    if (propertiesError) throw propertiesError;
+    const propertyIds = (properties || []).map((property) => property.id);
+    if (propertyIds.length === 0) return { total: 0, transactions: [], count: 0 };
+
     let query = supabase
       .from("bookings")
-      .select("amount, status, created_at, property:properties(id, title)")
-      .eq("host_id", hostId)
+      .select("total_amount, status, created_at, property:properties(id, title)")
+      .in("property_id", propertyIds)
       .eq("status", "COMPLETED");
 
     if (startDate) query = query.gte("created_at", startDate);
@@ -1007,7 +1016,7 @@ export const analyticsAPI = {
 
     if (error) throw error;
 
-    const total = (data || []).reduce((sum: number, b: any) => sum + (b.amount || 0), 0);
+    const total = (data || []).reduce((sum, booking) => sum + (booking.total_amount || 0), 0);
     return {
       total,
       transactions: data || [],
@@ -1018,7 +1027,7 @@ export const analyticsAPI = {
   async getPropertyAnalytics(propertyId: string) {
     const { data: bookings, error: bookingsError } = await supabase
       .from("bookings")
-      .select("status, amount, created_at")
+      .select("status, total_amount, created_at")
       .eq("property_id", propertyId);
 
     if (bookingsError) throw bookingsError;
@@ -1035,7 +1044,7 @@ export const analyticsAPI = {
     const completedBookings = (bookings || []).filter((b: any) => b.status === "COMPLETED").length;
     const totalEarnings = (bookings || [])
       .filter((b: any) => b.status === "COMPLETED")
-      .reduce((sum: number, b: any) => sum + (b.amount || 0), 0);
+      .reduce((sum, b) => sum + (b.total_amount || 0), 0);
 
     const avgRating =
       (reviews || []).length > 0
@@ -1091,10 +1100,18 @@ export const analyticsAPI = {
     const startDate = new Date();
     startDate.setMonth(startDate.getMonth() - months);
 
+    const { data: properties, error: propertiesError } = await supabase
+      .from("properties")
+      .select("id")
+      .eq("host_id", hostId);
+    if (propertiesError) throw propertiesError;
+    const propertyIds = (properties || []).map((property) => property.id);
+    if (propertyIds.length === 0) return {};
+
     const { data, error } = await supabase
       .from("bookings")
-      .select("amount, created_at")
-      .eq("host_id", hostId)
+      .select("total_amount, created_at")
+      .in("property_id", propertyIds)
       .eq("status", "COMPLETED")
       .gte("created_at", startDate.toISOString())
       .lte("created_at", endDate.toISOString());
@@ -1104,17 +1121,25 @@ export const analyticsAPI = {
     const revenueByMonth: { [key: string]: number } = {};
     (data || []).forEach((b: any) => {
       const month = new Date(b.created_at).toISOString().substring(0, 7);
-      revenueByMonth[month] = (revenueByMonth[month] || 0) + (b.amount || 0);
+      revenueByMonth[month] = (revenueByMonth[month] || 0) + (b.total_amount || 0);
     });
 
     return revenueByMonth;
   },
 
   async getBookingMetrics(hostId: string) {
+    const { data: properties, error: propertiesError } = await supabase
+      .from("properties")
+      .select("id")
+      .eq("host_id", hostId);
+    if (propertiesError) throw propertiesError;
+    const propertyIds = (properties || []).map((property) => property.id);
+    if (propertyIds.length === 0) return { total: 0, pending: 0, confirmed: 0, completed: 0, cancelled: 0 };
+
     const { data, error } = await supabase
       .from("bookings")
       .select("status")
-      .eq("host_id", hostId);
+      .in("property_id", propertyIds);
 
     if (error) throw error;
 
