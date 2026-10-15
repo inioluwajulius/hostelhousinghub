@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from 'next/navigation';
-;
 import { useAuth } from "@/contexts/AuthContext";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -35,16 +34,44 @@ const RoommateFinderPage = () => {
     gender_preference: "ANY",
     room_type_preference: "ANY",
     description: "",
+    sleep_schedule: "FLEXIBLE",
+    cleanliness: "MEDIUM",
+    smoking_ok: false,
+    study_level: "",
   });
+  const [filterGender, setFilterGender] = useState("all");
+  const [maxBudget, setMaxBudget] = useState("");
 
-  useEffect(() => { fetchData(); }, []);
+  const LABELS: Record<string, string> = { EARLY: "Early bird", NIGHT: "Night owl", FLEXIBLE: "Flexible hours", HIGH: "Very tidy", MEDIUM: "Tidy", LOW: "Relaxed" };
+
+  const openForm = () => {
+    if (!user) { toast.error("Please sign in"); router.push("/login"); return; }
+    if (myRequest) {
+      setForm({
+        university_id: myRequest.university_id || "",
+        budget_min: String(myRequest.budget_min ?? 0),
+        budget_max: String(myRequest.budget_max ?? 0),
+        gender_preference: myRequest.gender_preference || "ANY",
+        room_type_preference: myRequest.room_type_preference || "ANY",
+        description: myRequest.description || "",
+        sleep_schedule: myRequest.sleep_schedule || "FLEXIBLE",
+        cleanliness: myRequest.cleanliness || "MEDIUM",
+        smoking_ok: !!myRequest.smoking_ok,
+        study_level: myRequest.study_level || "",
+      });
+    }
+    setShowForm(true);
+  };
+
+  useEffect(() => { fetchData(); }, [user?.id]);
 
   const fetchData = async () => {
     const [reqRes, uniRes] = await Promise.all([
       supabase.from("roommate_requests").select("*, universities(name, short_name)").eq("is_active", true).order("created_at", { ascending: false }),
       supabase.from("universities").select("*").order("name"),
     ]);
-    const allRequests = reqRes.data || [];
+    if (reqRes.error) toast.error("Could not load roommate posts");
+    const allRequests: any[] = reqRes.data || [];
     
     // Fetch profile names for each request
     const userIds = allRequests.map((r: any) => r.user_id).filter((v, i, a) => a.indexOf(v) === i);
@@ -57,10 +84,7 @@ const RoommateFinderPage = () => {
     const enriched = allRequests.map((r: any) => ({ ...r, profile_name: profileMap[r.user_id] || "Student" }));
     setRequests(enriched);
     setUniversities(uniRes.data || []);
-    if (user) {
-      const mine = enriched.find((r: any) => r.user_id === user.id);
-      setMyRequest(mine || null);
-    }
+    setMyRequest(user ? enriched.find((r: any) => r.user_id === user.id) || null : null);
     setLoading(false);
   };
 
@@ -68,12 +92,20 @@ const RoommateFinderPage = () => {
     e.preventDefault();
     if (!user) { toast.error("Please sign in"); return; }
     if (!form.university_id) { toast.error("Select your university"); return; }
+    const bMin = parseInt(form.budget_min) || 0;
+    const bMax = parseInt(form.budget_max) || 0;
+    if (bMax < bMin) { toast.error("Max budget must be higher than min budget"); return; }
 
     const payload = {
       user_id: user.id,
       university_id: form.university_id,
-      budget_min: parseInt(form.budget_min) || 0,
-      budget_max: parseInt(form.budget_max) || 500000,
+      budget_min: bMin,
+      budget_max: bMax || 500000,
+      sleep_schedule: form.sleep_schedule,
+      cleanliness: form.cleanliness,
+      smoking_ok: form.smoking_ok,
+      study_level: form.study_level.trim() || null,
+      is_active: true,
       gender_preference: form.gender_preference,
       room_type_preference: form.room_type_preference,
       description: form.description.trim() || null,
@@ -94,14 +126,18 @@ const RoommateFinderPage = () => {
 
   const handleDelete = async () => {
     if (!myRequest) return;
-    await supabase.from("roommate_requests").delete().eq("id", myRequest.id);
+    if (!confirm("Remove your roommate post?")) return;
+    const { error } = await supabase.from("roommate_requests").delete().eq("id", myRequest.id);
+    if (error) { toast.error(error.message); return; }
     toast.success("Request removed");
     setMyRequest(null);
     fetchData();
   };
 
   let filtered = requests;
-  if (filterUni) filtered = filtered.filter(r => r.university_id === filterUni);
+  if (filterUni && filterUni !== "all") filtered = filtered.filter(r => r.university_id === filterUni);
+  if (filterGender !== "all") filtered = filtered.filter(r => r.gender_preference === filterGender || r.gender_preference === "ANY");
+  if (maxBudget) filtered = filtered.filter(r => Number(r.budget_min) <= Number(maxBudget));
 
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-background"><div className="animate-pulse text-muted-foreground">Loading...</div></div>;
 
@@ -120,14 +156,14 @@ const RoommateFinderPage = () => {
             {myRequest && (
               <Button variant="destructive" size="sm" onClick={handleDelete}>Remove My Post</Button>
             )}
-            <Button onClick={() => { if (!user) { toast.error("Please sign in"); return; } setShowForm(true); }} className="gap-1.5">
+            <Button onClick={openForm} className="gap-1.5">
               <Plus className="w-4 h-4" />{myRequest ? "Edit My Post" : "Post Request"}
             </Button>
           </div>
         </div>
 
         {/* Filter */}
-        <div className="flex gap-3 mb-6">
+        <div className="flex flex-wrap gap-3 mb-6">
           <Select value={filterUni} onValueChange={setFilterUni}>
             <SelectTrigger className="w-64"><SelectValue placeholder="Filter by university" /></SelectTrigger>
             <SelectContent>
@@ -135,13 +171,22 @@ const RoommateFinderPage = () => {
               {universities.map(u => <SelectItem key={u.id} value={u.id}>{u.short_name}</SelectItem>)}
             </SelectContent>
           </Select>
-          {filterUni && filterUni !== "all" && <Button variant="ghost" size="sm" onClick={() => setFilterUni("")}>Clear</Button>}
+          <Select value={filterGender} onValueChange={setFilterGender}>
+            <SelectTrigger className="w-44"><SelectValue placeholder="Gender" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Any gender</SelectItem>
+              <SelectItem value="MALE_ONLY">Male</SelectItem>
+              <SelectItem value="FEMALE_ONLY">Female</SelectItem>
+            </SelectContent>
+          </Select>
+          <Input type="number" placeholder="My max budget (₦)" value={maxBudget} onChange={e => setMaxBudget(e.target.value)} className="w-48" />
+          {(filterUni || filterGender !== "all" || maxBudget) && <Button variant="ghost" size="sm" onClick={() => { setFilterUni(""); setFilterGender("all"); setMaxBudget(""); }}>Clear</Button>}
         </div>
 
         {/* Post form modal */}
         {showForm && (
           <div className="fixed inset-0 bg-foreground/50 z-50 flex items-center justify-center p-4">
-            <div className="bg-card rounded-2xl border shadow-elevated max-w-lg w-full p-6">
+            <div className="bg-card rounded-2xl border shadow-elevated max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="font-display text-xl font-bold">Find a Roommate</h2>
                 <button onClick={() => setShowForm(false)}><X className="w-5 h-5 text-muted-foreground" /></button>
@@ -183,6 +228,37 @@ const RoommateFinderPage = () => {
                     </Select>
                   </div>
                 </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Sleep Schedule</Label>
+                    <Select value={form.sleep_schedule} onValueChange={v => setForm({ ...form, sleep_schedule: v })}>
+                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="EARLY">Early bird</SelectItem>
+                        <SelectItem value="NIGHT">Night owl</SelectItem>
+                        <SelectItem value="FLEXIBLE">Flexible</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Cleanliness</Label>
+                    <Select value={form.cleanliness} onValueChange={v => setForm({ ...form, cleanliness: v })}>
+                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="HIGH">Very tidy</SelectItem>
+                        <SelectItem value="MEDIUM">Tidy</SelectItem>
+                        <SelectItem value="LOW">Relaxed</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4 items-end">
+                  <div><Label>Level (optional)</Label><Input value={form.study_level} onChange={e => setForm({ ...form, study_level: e.target.value })} placeholder="e.g. 200L" className="mt-1" /></div>
+                  <label className="flex items-center gap-2 text-sm pb-2">
+                    <input type="checkbox" checked={form.smoking_ok} onChange={e => setForm({ ...form, smoking_ok: e.target.checked })} />
+                    Okay with smoking
+                  </label>
+                </div>
                 <div>
                   <Label>About you / what you're looking for</Label>
                   <Textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="E.g. I'm a 200-level student, quiet, prefer someone who keeps things tidy..." className="mt-1" rows={3} />
@@ -198,7 +274,7 @@ const RoommateFinderPage = () => {
           <div className="text-center py-16 bg-card rounded-xl border">
             <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="font-display text-lg font-semibold mb-2">No roommate requests yet</h3>
-            <p className="text-muted-foreground text-sm">Be the first to post a request!</p>
+            <p className="text-muted-foreground text-sm">{requests.length ? "No posts match your filters." : "Be the first to post a request!"}</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -220,7 +296,11 @@ const RoommateFinderPage = () => {
                 <div className="flex flex-wrap gap-2">
                   <Badge variant="outline" className="text-xs">{formatPrice(r.budget_min)} — {formatPrice(r.budget_max)}</Badge>
                   {r.gender_preference !== "ANY" && <Badge variant="outline" className="text-xs">{r.gender_preference === "MALE_ONLY" ? "Male" : "Female"}</Badge>}
-                  {r.room_type_preference !== "ANY" && <Badge variant="outline" className="text-xs">{r.room_type_preference.replace("_", " ")}</Badge>}
+                  {r.room_type_preference !== "ANY" && <Badge variant="outline" className="text-xs">{r.room_type_preference.replace(/_/g, " ")}</Badge>}
+                  {r.sleep_schedule && <Badge variant="secondary" className="text-xs">{LABELS[r.sleep_schedule] || r.sleep_schedule}</Badge>}
+                  {r.cleanliness && <Badge variant="secondary" className="text-xs">{LABELS[r.cleanliness] || r.cleanliness}</Badge>}
+                  {r.study_level && <Badge variant="secondary" className="text-xs">{r.study_level}</Badge>}
+                  <Badge variant="secondary" className="text-xs">{r.smoking_ok ? "Smoking OK" : "No smoking"}</Badge>
                 </div>
 
                 {r.description && <p className="text-sm text-muted-foreground line-clamp-3">{r.description}</p>}
