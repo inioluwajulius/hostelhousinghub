@@ -1168,7 +1168,7 @@ export const roommateFinderAPI = {
     smokingAllowed?: boolean;
   }) {
     const { data, error } = await supabase
-      .from("roommate_profiles")
+      .from("roommate_profiles" as any)
       .insert([
         {
           user_id: userId,
@@ -1193,7 +1193,7 @@ export const roommateFinderAPI = {
 
   async getRoommateProfile(userId: string) {
     const { data, error } = await supabase
-      .from("roommate_profiles")
+      .from("roommate_profiles" as any)
       .select(`
         *,
         user:profiles(id, full_name, profile_photo_url, university_id)
@@ -1217,7 +1217,7 @@ export const roommateFinderAPI = {
     sleepSchedule?: string;
   }) {
     let query = supabase
-      .from("roommate_profiles")
+      .from("roommate_profiles" as any)
       .select(`
         *,
         user:profiles(id, full_name, profile_photo_url, email)
@@ -1239,7 +1239,7 @@ export const roommateFinderAPI = {
 
   async sendRoommateRequest(senderId: string, recipientId: string, message?: string) {
     const { data, error } = await supabase
-      .from("roommate_requests")
+      .from("roommate_requests" as any)
       .insert([
         {
           sender_id: senderId,
@@ -1258,7 +1258,7 @@ export const roommateFinderAPI = {
 
   async getRoommateRequests(userId: string) {
     const { data, error } = await supabase
-      .from("roommate_requests")
+      .from("roommate_requests" as any)
       .select(`
         *,
         sender:profiles(id, full_name, profile_photo_url),
@@ -1273,7 +1273,7 @@ export const roommateFinderAPI = {
 
   async acceptRoommateRequest(requestId: string) {
     const { data, error } = await supabase
-      .from("roommate_requests")
+      .from("roommate_requests" as any)
       .update({ status: "ACCEPTED" })
       .eq("id", requestId)
       .select()
@@ -1285,7 +1285,7 @@ export const roommateFinderAPI = {
 
   async rejectRoommateRequest(requestId: string) {
     const { data, error } = await supabase
-      .from("roommate_requests")
+      .from("roommate_requests" as any)
       .update({ status: "REJECTED" })
       .eq("id", requestId)
       .select()
@@ -1297,7 +1297,7 @@ export const roommateFinderAPI = {
 
   async getAcceptedMatches(userId: string) {
     const { data, error } = await supabase
-      .from("roommate_requests")
+      .from("roommate_requests" as any)
       .select(`
         *,
         sender:profiles(id, full_name, profile_photo_url, email),
@@ -1312,7 +1312,7 @@ export const roommateFinderAPI = {
 
   async updateRoommateProfile(userId: string, updates: any) {
     const { data, error } = await supabase
-      .from("roommate_profiles")
+      .from("roommate_profiles" as any)
       .update(updates)
       .eq("user_id", userId)
       .select()
@@ -1394,7 +1394,7 @@ export const communityVerificationAPI = {
   async upvoteProperty(propertyId: string, userId: string) {
     // Check if already upvoted
     const { data: existing, error: checkError } = await supabase
-      .from("property_votes")
+      .from("property_votes" as any)
       .select("id")
       .eq("property_id", propertyId)
       .eq("user_id", userId)
@@ -1406,7 +1406,7 @@ export const communityVerificationAPI = {
 
     // Remove downvote if exists
     await supabase
-      .from("property_votes")
+      .from("property_votes" as any)
       .delete()
       .eq("property_id", propertyId)
       .eq("user_id", userId)
@@ -1414,7 +1414,7 @@ export const communityVerificationAPI = {
 
     // Add upvote
     const { data, error } = await supabase
-      .from("property_votes")
+      .from("property_votes" as any)
       .insert([
         {
           property_id: propertyId,
@@ -1433,7 +1433,7 @@ export const communityVerificationAPI = {
   async downvoteProperty(propertyId: string, userId: string) {
     // Check if already downvoted
     const { data: existing, error: checkError } = await supabase
-      .from("property_votes")
+      .from("property_votes" as any)
       .select("id")
       .eq("property_id", propertyId)
       .eq("user_id", userId)
@@ -1445,7 +1445,7 @@ export const communityVerificationAPI = {
 
     // Remove upvote if exists
     await supabase
-      .from("property_votes")
+      .from("property_votes" as any)
       .delete()
       .eq("property_id", propertyId)
       .eq("user_id", userId)
@@ -1453,7 +1453,7 @@ export const communityVerificationAPI = {
 
     // Add downvote
     const { data, error } = await supabase
-      .from("property_votes")
+      .from("property_votes" as any)
       .insert([
         {
           property_id: propertyId,
@@ -1471,7 +1471,7 @@ export const communityVerificationAPI = {
 
   async flagProperty(propertyId: string, userId: string, reason: string, description?: string) {
     const { data, error } = await supabase
-      .from("property_flags")
+      .from("property_flags" as any)
       .insert([
         {
           property_id: propertyId,
@@ -1491,7 +1491,7 @@ export const communityVerificationAPI = {
 
   async getPropertyVotes(propertyId: string) {
     const { data, error } = await supabase
-      .from("property_votes")
+      .from("property_votes" as any)
       .select("vote_type")
       .eq("property_id", propertyId);
 
@@ -1511,7 +1511,7 @@ export const communityVerificationAPI = {
 
   async getUserVote(propertyId: string, userId: string) {
     const { data, error } = await supabase
-      .from("property_votes")
+      .from("property_votes" as any)
       .select("vote_type")
       .eq("property_id", propertyId)
       .eq("user_id", userId)
@@ -1526,7 +1526,7 @@ export const communityVerificationAPI = {
 
   async getPropertyFlags(propertyId: string) {
     const { data, error } = await supabase
-      .from("property_flags")
+      .from("property_flags" as any)
       .select(`
         *,
         reporter:profiles(full_name, profile_photo_url)
@@ -1540,7 +1540,7 @@ export const communityVerificationAPI = {
 
   async resolveFlag(flagId: string, adminId: string, resolution: string) {
     const { data, error } = await supabase
-      .from("property_flags")
+      .from("property_flags" as any)
       .update({
         status: "RESOLVED",
         resolution,
@@ -1581,7 +1581,7 @@ export const paymentWebhookAPI = {
   async handlePaymentSuccess(reference: string) {
     // Fetch booking by payment reference
     const { data: booking, error: bookingError } = await supabase
-      .from("bookings")
+      .from("bookings" as any)
       .select("id, student_id, property_id, host_id, amount")
       .eq("payment_reference", reference)
       .single();
@@ -1592,7 +1592,7 @@ export const paymentWebhookAPI = {
 
     // Update booking status to CONFIRMED
     const { data: updated, error: updateError } = await supabase
-      .from("bookings")
+      .from("bookings" as any)
       .update({
         status: "CONFIRMED",
         paid_at: new Date().toISOString(),
@@ -1624,7 +1624,7 @@ export const paymentWebhookAPI = {
 
   async handlePaymentFailed(reference: string, reason: string) {
     const { data: booking, error } = await supabase
-      .from("bookings")
+      .from("bookings" as any)
       .select("id, student_id")
       .eq("payment_reference", reference)
       .single();
@@ -1634,7 +1634,7 @@ export const paymentWebhookAPI = {
 
     // Update booking status to CANCELLED
     await supabase
-      .from("bookings")
+      .from("bookings" as any)
       .update({
         status: "CANCELLED",
       })
@@ -1651,7 +1651,7 @@ export const paymentWebhookAPI = {
 
   async getPaymentStatus(bookingId: string) {
     const { data, error } = await supabase
-      .from("bookings")
+      .from("bookings" as any)
       .select("status, amount, paid_at, payment_reference")
       .eq("id", bookingId)
       .single();
@@ -1670,7 +1670,7 @@ export const paymentWebhookAPI = {
 
   async recordPaymentAttempt(bookingId: string, reference: string, amount: number) {
     const { data, error } = await supabase
-      .from("payment_attempts")
+      .from("payment_attempts" as any)
       .insert([
         {
           booking_id: bookingId,
@@ -1689,7 +1689,7 @@ export const paymentWebhookAPI = {
 
   async updatePaymentAttempt(attemptId: string, status: "SUCCESS" | "FAILED", details?: any) {
     const { data, error } = await supabase
-      .from("payment_attempts")
+      .from("payment_attempts" as any)
       .update({
         status,
         response: details,
@@ -1705,7 +1705,7 @@ export const paymentWebhookAPI = {
 
   async getPaymentHistory(bookingId: string) {
     const { data, error } = await supabase
-      .from("payment_attempts")
+      .from("payment_attempts" as any)
       .select("*")
       .eq("booking_id", bookingId)
       .order("attempted_at", { ascending: false });
