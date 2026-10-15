@@ -697,7 +697,7 @@ export const matricVerificationAPI = {
         await supabase
           .from("profiles")
           .update({ is_verified: true })
-          .eq("id", data.user_id);
+          .eq("id", (data as any).user_id);
       }
     }
 
@@ -906,7 +906,7 @@ export const availabilityAPI = {
 
   async blockDates(propertyId: string, startDate: string, endDate: string, reason: string) {
     const { data, error } = await supabase
-      .from("blocked_dates")
+      .from("blocked_dates" as any)
       .insert([
         {
           property_id: propertyId,
@@ -925,7 +925,7 @@ export const availabilityAPI = {
 
   async getBlockedDates(propertyId: string) {
     const { data, error } = await supabase
-      .from("blocked_dates")
+      .from("blocked_dates" as any)
       .select("*")
       .eq("property_id", propertyId)
       .gte("end_date", new Date().toISOString().split("T")[0])
@@ -937,7 +937,7 @@ export const availabilityAPI = {
 
   async unblockDates(blockedDateId: string) {
     const { error } = await supabase
-      .from("blocked_dates")
+      .from("blocked_dates" as any)
       .delete()
       .eq("id", blockedDateId);
 
@@ -994,10 +994,19 @@ export const availabilityAPI = {
 // ============= ANALYTICS & EARNINGS =============
 export const analyticsAPI = {
   async getHostEarnings(hostId: string, startDate?: string, endDate?: string) {
+    const { data: properties, error: propertiesError } = await supabase
+      .from("properties")
+      .select("id")
+      .eq("host_id", hostId);
+
+    if (propertiesError) throw propertiesError;
+    const propertyIds = (properties || []).map((property) => property.id);
+    if (propertyIds.length === 0) return { total: 0, transactions: [], count: 0 };
+
     let query = supabase
       .from("bookings")
-      .select("amount, status, created_at, property:properties(id, title)")
-      .eq("host_id", hostId)
+      .select("total_amount, status, created_at, property:properties(id, title)")
+      .in("property_id", propertyIds)
       .eq("status", "COMPLETED");
 
     if (startDate) query = query.gte("created_at", startDate);
@@ -1007,7 +1016,7 @@ export const analyticsAPI = {
 
     if (error) throw error;
 
-    const total = (data || []).reduce((sum: number, b: any) => sum + (b.amount || 0), 0);
+    const total = (data || []).reduce((sum, booking) => sum + (booking.total_amount || 0), 0);
     return {
       total,
       transactions: data || [],
@@ -1018,7 +1027,7 @@ export const analyticsAPI = {
   async getPropertyAnalytics(propertyId: string) {
     const { data: bookings, error: bookingsError } = await supabase
       .from("bookings")
-      .select("status, amount, created_at")
+      .select("status, total_amount, created_at")
       .eq("property_id", propertyId);
 
     if (bookingsError) throw bookingsError;
@@ -1035,7 +1044,7 @@ export const analyticsAPI = {
     const completedBookings = (bookings || []).filter((b: any) => b.status === "COMPLETED").length;
     const totalEarnings = (bookings || [])
       .filter((b: any) => b.status === "COMPLETED")
-      .reduce((sum: number, b: any) => sum + (b.amount || 0), 0);
+      .reduce((sum, b) => sum + (b.total_amount || 0), 0);
 
     const avgRating =
       (reviews || []).length > 0
@@ -1091,10 +1100,18 @@ export const analyticsAPI = {
     const startDate = new Date();
     startDate.setMonth(startDate.getMonth() - months);
 
+    const { data: properties, error: propertiesError } = await supabase
+      .from("properties")
+      .select("id")
+      .eq("host_id", hostId);
+    if (propertiesError) throw propertiesError;
+    const propertyIds = (properties || []).map((property) => property.id);
+    if (propertyIds.length === 0) return {};
+
     const { data, error } = await supabase
       .from("bookings")
-      .select("amount, created_at")
-      .eq("host_id", hostId)
+      .select("total_amount, created_at")
+      .in("property_id", propertyIds)
       .eq("status", "COMPLETED")
       .gte("created_at", startDate.toISOString())
       .lte("created_at", endDate.toISOString());
@@ -1104,17 +1121,25 @@ export const analyticsAPI = {
     const revenueByMonth: { [key: string]: number } = {};
     (data || []).forEach((b: any) => {
       const month = new Date(b.created_at).toISOString().substring(0, 7);
-      revenueByMonth[month] = (revenueByMonth[month] || 0) + (b.amount || 0);
+      revenueByMonth[month] = (revenueByMonth[month] || 0) + (b.total_amount || 0);
     });
 
     return revenueByMonth;
   },
 
   async getBookingMetrics(hostId: string) {
+    const { data: properties, error: propertiesError } = await supabase
+      .from("properties")
+      .select("id")
+      .eq("host_id", hostId);
+    if (propertiesError) throw propertiesError;
+    const propertyIds = (properties || []).map((property) => property.id);
+    if (propertyIds.length === 0) return { total: 0, pending: 0, confirmed: 0, completed: 0, cancelled: 0 };
+
     const { data, error } = await supabase
       .from("bookings")
       .select("status")
-      .eq("host_id", hostId);
+      .in("property_id", propertyIds);
 
     if (error) throw error;
 
@@ -1143,7 +1168,7 @@ export const roommateFinderAPI = {
     smokingAllowed?: boolean;
   }) {
     const { data, error } = await supabase
-      .from("roommate_profiles")
+      .from("roommate_profiles" as any)
       .insert([
         {
           user_id: userId,
@@ -1168,7 +1193,7 @@ export const roommateFinderAPI = {
 
   async getRoommateProfile(userId: string) {
     const { data, error } = await supabase
-      .from("roommate_profiles")
+      .from("roommate_profiles" as any)
       .select(`
         *,
         user:profiles(id, full_name, profile_photo_url, university_id)
@@ -1192,7 +1217,7 @@ export const roommateFinderAPI = {
     sleepSchedule?: string;
   }) {
     let query = supabase
-      .from("roommate_profiles")
+      .from("roommate_profiles" as any)
       .select(`
         *,
         user:profiles(id, full_name, profile_photo_url, email)
@@ -1214,7 +1239,7 @@ export const roommateFinderAPI = {
 
   async sendRoommateRequest(senderId: string, recipientId: string, message?: string) {
     const { data, error } = await supabase
-      .from("roommate_requests")
+      .from("roommate_requests" as any)
       .insert([
         {
           sender_id: senderId,
@@ -1233,7 +1258,7 @@ export const roommateFinderAPI = {
 
   async getRoommateRequests(userId: string) {
     const { data, error } = await supabase
-      .from("roommate_requests")
+      .from("roommate_requests" as any)
       .select(`
         *,
         sender:profiles(id, full_name, profile_photo_url),
@@ -1248,7 +1273,7 @@ export const roommateFinderAPI = {
 
   async acceptRoommateRequest(requestId: string) {
     const { data, error } = await supabase
-      .from("roommate_requests")
+      .from("roommate_requests" as any)
       .update({ status: "ACCEPTED" })
       .eq("id", requestId)
       .select()
@@ -1260,7 +1285,7 @@ export const roommateFinderAPI = {
 
   async rejectRoommateRequest(requestId: string) {
     const { data, error } = await supabase
-      .from("roommate_requests")
+      .from("roommate_requests" as any)
       .update({ status: "REJECTED" })
       .eq("id", requestId)
       .select()
@@ -1272,7 +1297,7 @@ export const roommateFinderAPI = {
 
   async getAcceptedMatches(userId: string) {
     const { data, error } = await supabase
-      .from("roommate_requests")
+      .from("roommate_requests" as any)
       .select(`
         *,
         sender:profiles(id, full_name, profile_photo_url, email),
@@ -1287,7 +1312,7 @@ export const roommateFinderAPI = {
 
   async updateRoommateProfile(userId: string, updates: any) {
     const { data, error } = await supabase
-      .from("roommate_profiles")
+      .from("roommate_profiles" as any)
       .update(updates)
       .eq("user_id", userId)
       .select()
@@ -1369,7 +1394,7 @@ export const communityVerificationAPI = {
   async upvoteProperty(propertyId: string, userId: string) {
     // Check if already upvoted
     const { data: existing, error: checkError } = await supabase
-      .from("property_votes")
+      .from("property_votes" as any)
       .select("id")
       .eq("property_id", propertyId)
       .eq("user_id", userId)
@@ -1381,7 +1406,7 @@ export const communityVerificationAPI = {
 
     // Remove downvote if exists
     await supabase
-      .from("property_votes")
+      .from("property_votes" as any)
       .delete()
       .eq("property_id", propertyId)
       .eq("user_id", userId)
@@ -1389,7 +1414,7 @@ export const communityVerificationAPI = {
 
     // Add upvote
     const { data, error } = await supabase
-      .from("property_votes")
+      .from("property_votes" as any)
       .insert([
         {
           property_id: propertyId,
@@ -1408,7 +1433,7 @@ export const communityVerificationAPI = {
   async downvoteProperty(propertyId: string, userId: string) {
     // Check if already downvoted
     const { data: existing, error: checkError } = await supabase
-      .from("property_votes")
+      .from("property_votes" as any)
       .select("id")
       .eq("property_id", propertyId)
       .eq("user_id", userId)
@@ -1420,7 +1445,7 @@ export const communityVerificationAPI = {
 
     // Remove upvote if exists
     await supabase
-      .from("property_votes")
+      .from("property_votes" as any)
       .delete()
       .eq("property_id", propertyId)
       .eq("user_id", userId)
@@ -1428,7 +1453,7 @@ export const communityVerificationAPI = {
 
     // Add downvote
     const { data, error } = await supabase
-      .from("property_votes")
+      .from("property_votes" as any)
       .insert([
         {
           property_id: propertyId,
@@ -1446,7 +1471,7 @@ export const communityVerificationAPI = {
 
   async flagProperty(propertyId: string, userId: string, reason: string, description?: string) {
     const { data, error } = await supabase
-      .from("property_flags")
+      .from("property_flags" as any)
       .insert([
         {
           property_id: propertyId,
@@ -1466,7 +1491,7 @@ export const communityVerificationAPI = {
 
   async getPropertyVotes(propertyId: string) {
     const { data, error } = await supabase
-      .from("property_votes")
+      .from("property_votes" as any)
       .select("vote_type")
       .eq("property_id", propertyId);
 
@@ -1486,7 +1511,7 @@ export const communityVerificationAPI = {
 
   async getUserVote(propertyId: string, userId: string) {
     const { data, error } = await supabase
-      .from("property_votes")
+      .from("property_votes" as any)
       .select("vote_type")
       .eq("property_id", propertyId)
       .eq("user_id", userId)
@@ -1496,12 +1521,12 @@ export const communityVerificationAPI = {
       return null; // Not found
     }
     if (error) throw error;
-    return data?.vote_type || null;
+    return (data as any)?.vote_type || null;
   },
 
   async getPropertyFlags(propertyId: string) {
     const { data, error } = await supabase
-      .from("property_flags")
+      .from("property_flags" as any)
       .select(`
         *,
         reporter:profiles(full_name, profile_photo_url)
@@ -1515,7 +1540,7 @@ export const communityVerificationAPI = {
 
   async resolveFlag(flagId: string, adminId: string, resolution: string) {
     const { data, error } = await supabase
-      .from("property_flags")
+      .from("property_flags" as any)
       .update({
         status: "RESOLVED",
         resolution,
@@ -1556,7 +1581,7 @@ export const paymentWebhookAPI = {
   async handlePaymentSuccess(reference: string) {
     // Fetch booking by payment reference
     const { data: booking, error: bookingError } = await supabase
-      .from("bookings")
+      .from("bookings" as any)
       .select("id, student_id, property_id, host_id, amount")
       .eq("payment_reference", reference)
       .single();
@@ -1564,15 +1589,16 @@ export const paymentWebhookAPI = {
     if (bookingError) {
       throw new Error("Booking not found for payment reference");
     }
+    const paymentBooking = booking as any;
 
     // Update booking status to CONFIRMED
     const { data: updated, error: updateError } = await supabase
-      .from("bookings")
+      .from("bookings" as any)
       .update({
         status: "CONFIRMED",
         paid_at: new Date().toISOString(),
       })
-      .eq("id", booking.id)
+      .eq("id", paymentBooking.id)
       .select()
       .single();
 
@@ -1580,18 +1606,18 @@ export const paymentWebhookAPI = {
 
     // Create notification for student
     await notificationsAPI.createNotification(
-      booking.student_id,
+      paymentBooking.student_id,
       "payment",
-      `Payment confirmed for booking at ${booking.property_id}. Your reservation is confirmed!`,
-      booking.id
+      `Payment confirmed for booking at ${paymentBooking.property_id}. Your reservation is confirmed!`,
+      paymentBooking.id
     );
 
     // Create notification for host
     await notificationsAPI.createNotification(
-      booking.host_id,
+      paymentBooking.host_id,
       "booking",
-      `Payment received! New booking confirmed. Amount: ₦${booking.amount?.toLocaleString()}`,
-      booking.id
+      `Payment received! New booking confirmed. Amount: ₦${paymentBooking.amount?.toLocaleString()}`,
+      paymentBooking.id
     );
 
     return updated;
@@ -1599,53 +1625,55 @@ export const paymentWebhookAPI = {
 
   async handlePaymentFailed(reference: string, reason: string) {
     const { data: booking, error } = await supabase
-      .from("bookings")
+      .from("bookings" as any)
       .select("id, student_id")
       .eq("payment_reference", reference)
       .single();
 
     if (error && error.code !== "PGRST116") throw error;
     if (!booking) return;
+    const paymentBooking = booking as any;
 
     // Update booking status to CANCELLED
     await supabase
-      .from("bookings")
+      .from("bookings" as any)
       .update({
         status: "CANCELLED",
       })
-      .eq("id", booking.id);
+      .eq("id", paymentBooking.id);
 
     // Notify student
     await notificationsAPI.createNotification(
-      booking.student_id,
+      paymentBooking.student_id,
       "payment",
       `Payment failed: ${reason}. Please try again or contact support.`,
-      booking.id
+      paymentBooking.id
     );
   },
 
   async getPaymentStatus(bookingId: string) {
     const { data, error } = await supabase
-      .from("bookings")
+      .from("bookings" as any)
       .select("status, amount, paid_at, payment_reference")
       .eq("id", bookingId)
       .single();
 
     if (error) throw error;
+    const paymentStatus = data as any;
 
     return {
       bookingId,
-      status: data.status,
-      amount: data.amount,
-      paidAt: data.paid_at,
-      isPaid: data.status === "CONFIRMED" || !!data.paid_at,
-      reference: data.payment_reference,
+      status: paymentStatus.status,
+      amount: paymentStatus.amount,
+      paidAt: paymentStatus.paid_at,
+      isPaid: paymentStatus.status === "CONFIRMED" || !!paymentStatus.paid_at,
+      reference: paymentStatus.payment_reference,
     };
   },
 
   async recordPaymentAttempt(bookingId: string, reference: string, amount: number) {
     const { data, error } = await supabase
-      .from("payment_attempts")
+      .from("payment_attempts" as any)
       .insert([
         {
           booking_id: bookingId,
@@ -1664,7 +1692,7 @@ export const paymentWebhookAPI = {
 
   async updatePaymentAttempt(attemptId: string, status: "SUCCESS" | "FAILED", details?: any) {
     const { data, error } = await supabase
-      .from("payment_attempts")
+      .from("payment_attempts" as any)
       .update({
         status,
         response: details,
@@ -1680,7 +1708,7 @@ export const paymentWebhookAPI = {
 
   async getPaymentHistory(bookingId: string) {
     const { data, error } = await supabase
-      .from("payment_attempts")
+      .from("payment_attempts" as any)
       .select("*")
       .eq("booking_id", bookingId)
       .order("attempted_at", { ascending: false });
