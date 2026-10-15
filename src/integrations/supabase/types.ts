@@ -409,12 +409,16 @@ export type Database = {
         Row: {
           budget_max: number | null
           budget_min: number | null
+          cleanliness: string
           created_at: string | null
           description: string | null
           gender_preference: string | null
           id: string
           is_active: boolean | null
           room_type_preference: string | null
+          sleep_schedule: string
+          smoking_ok: boolean
+          study_level: string | null
           university_id: string | null
           updated_at: string | null
           user_id: string
@@ -422,12 +426,16 @@ export type Database = {
         Insert: {
           budget_max?: number | null
           budget_min?: number | null
+          cleanliness?: string
           created_at?: string | null
           description?: string | null
           gender_preference?: string | null
           id?: string
           is_active?: boolean | null
           room_type_preference?: string | null
+          sleep_schedule?: string
+          smoking_ok?: boolean
+          study_level?: string | null
           university_id?: string | null
           updated_at?: string | null
           user_id: string
@@ -435,12 +443,16 @@ export type Database = {
         Update: {
           budget_max?: number | null
           budget_min?: number | null
+          cleanliness?: string
           created_at?: string | null
           description?: string | null
           gender_preference?: string | null
           id?: string
           is_active?: boolean | null
           room_type_preference?: string | null
+          sleep_schedule?: string
+          smoking_ok?: boolean
+          study_level?: string | null
           university_id?: string | null
           updated_at?: string | null
           user_id?: string
