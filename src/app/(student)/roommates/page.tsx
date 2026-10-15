@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Users, Plus, X, MessageSquare, GraduationCap } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 
 const formatPrice = (v: number) => new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", minimumFractionDigits: 0 }).format(v);
@@ -24,6 +25,7 @@ const RoommateFinderPage = () => {
   const [universities, setUniversities] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState<any>(null);
   const [myRequest, setMyRequest] = useState<any>(null);
   const [filterUni, setFilterUni] = useState("");
 
@@ -279,7 +281,20 @@ const RoommateFinderPage = () => {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {filtered.map(r => (
-              <div key={r.id} className={`bg-card rounded-xl border p-5 space-y-3 ${r.user_id === user?.id ? "ring-2 ring-primary/30" : ""}`}>
+              <article
+                key={r.id}
+                role="button"
+                tabIndex={0}
+                aria-label={`View ${r.profile_name || "student"}'s roommate post`}
+                onClick={() => setSelectedRequest(r)}
+                onKeyDown={(event) => {
+                  if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {
+                    event.preventDefault();
+                    setSelectedRequest(r);
+                  }
+                }}
+                className={`bg-card rounded-xl border p-5 space-y-3 cursor-pointer transition-colors hover:border-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${r.user_id === user?.id ? "ring-2 ring-primary/30" : ""}`}
+              >
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
                     {r.profile_name?.charAt(0) || "?"}
@@ -306,15 +321,52 @@ const RoommateFinderPage = () => {
                 {r.description && <p className="text-sm text-muted-foreground line-clamp-3">{r.description}</p>}
 
                 {user && r.user_id !== user.id && (
-                  <Button variant="outline" size="sm" className="w-full gap-1.5" onClick={() => router.push(`/messages?with=${r.user_id}`)}>
+                  <Button variant="outline" size="sm" className="w-full gap-1.5" onClick={(event) => { event.stopPropagation(); router.push(`/messages?with=${r.user_id}`); }}>
                     <MessageSquare className="w-4 h-4" />Message
                   </Button>
                 )}
-              </div>
+              </article>
             ))}
           </div>
         )}
       </main>
+      <Dialog open={!!selectedRequest} onOpenChange={(open) => { if (!open) setSelectedRequest(null); }}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto">
+          {selectedRequest && (
+            <>
+              <DialogHeader>
+                <DialogTitle>{selectedRequest.profile_name || "Student"}</DialogTitle>
+                <DialogDescription>
+                  {selectedRequest.universities?.name || selectedRequest.universities?.short_name || "University not listed"}
+                  {selectedRequest.study_level ? ` · ${selectedRequest.study_level}` : ""}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="rounded-md border p-4">
+                  <p className="text-sm text-muted-foreground">Monthly budget</p>
+                  <p className="font-semibold">{formatPrice(selectedRequest.budget_min)} – {formatPrice(selectedRequest.budget_max)}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div><p className="text-muted-foreground">Gender preference</p><p className="font-medium">{selectedRequest.gender_preference === "ANY" ? "Any" : selectedRequest.gender_preference === "MALE_ONLY" ? "Male" : "Female"}</p></div>
+                  <div><p className="text-muted-foreground">Room type</p><p className="font-medium">{selectedRequest.room_type_preference === "ANY" ? "Any" : selectedRequest.room_type_preference?.replace(/_/g, " ")}</p></div>
+                  <div><p className="text-muted-foreground">Sleep schedule</p><p className="font-medium">{LABELS[selectedRequest.sleep_schedule] || selectedRequest.sleep_schedule || "Not specified"}</p></div>
+                  <div><p className="text-muted-foreground">Cleanliness</p><p className="font-medium">{LABELS[selectedRequest.cleanliness] || selectedRequest.cleanliness || "Not specified"}</p></div>
+                  <div><p className="text-muted-foreground">Smoking</p><p className="font-medium">{selectedRequest.smoking_ok ? "Okay with smoking" : "No smoking"}</p></div>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">About</p>
+                  <p className="mt-1 whitespace-pre-wrap text-sm">{selectedRequest.description || "No introduction added yet."}</p>
+                </div>
+                {user && selectedRequest.user_id !== user.id && (
+                  <Button className="w-full gap-2" onClick={() => router.push(`/messages?with=${selectedRequest.user_id}`)}>
+                    <MessageSquare className="h-4 w-4" /> Message {selectedRequest.profile_name || "student"}
+                  </Button>
+                )}
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
       <Footer />
     </div>
   );
