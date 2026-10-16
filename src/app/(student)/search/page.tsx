@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from 'next/navigation';
+import dynamic from "next/dynamic";
 import Link from 'next/link';
 import { Suspense } from "react";
 ;
@@ -10,7 +11,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ListingCard from "@/components/ListingCard";
 import HeroSearch from "@/components/HeroSearch";
-import MapView from "@/components/MapView";
+const MapView = dynamic(() => import("@/components/MapView"), { ssr: false });
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
